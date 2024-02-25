@@ -13,7 +13,13 @@ coords/__pycache__
 
 # sequences
 /sequences/__pycache__
-/sequences/test/
+/sequences/helper/
+
+# characteristics
+/characteristics/__pycache__
+
+__pycache__
+.pytest_cache
 
 
 

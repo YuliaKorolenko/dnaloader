@@ -1,3 +1,4 @@
+print("coordibates", __name__)
 from typing import List
 from common import Chromosome_Info
 import random

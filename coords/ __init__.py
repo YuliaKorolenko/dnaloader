@@ -1,4 +1,4 @@
 from Coordinates import HandMadeCoordinates
-from common import Chromosome_Info
+from Coordinates import RandomCoordinates
 
-__all__ = ['HandMadeCoordinates', 'Chromosome_Info']
+__all__ = ['HandMadeCoordinates', 'RandomCoordinates']
