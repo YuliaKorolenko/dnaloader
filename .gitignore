@@ -18,6 +18,10 @@ coords/__pycache__
 # characteristics
 /characteristics/__pycache__
 
+characteristics/interval.all.obs_1.bw
+resfold/
+file_paths.txt
+
 __pycache__
 .pytest_cache
 

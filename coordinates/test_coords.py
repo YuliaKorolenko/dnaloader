@@ -1,15 +1,11 @@
 import sys
 
 sys.path.append("/Users/yulkorolenko/Desktop/Diploma/dna-loader")
-from coords.Coordinates import HandMadeCoordinates
-from coords.Coordinates import RandomCoordinates
-from common import Chromosome_Info
+from coordinates.Coordinates import HandMadeCoordinates
+from coordinates.Coordinates import RandomCoordinates
 import pytest
 
-chrom_info = [Chromosome_Info(1, 100, 200),
-                    Chromosome_Info(2, 300, 400),
-                    Chromosome_Info(3, 700, 800),
-                    Chromosome_Info(4, 1100, 100)]  
+chrom_info = [(100, 200), (300, 400), (700, 800), (1100, 100)]  
 
 def test_hand_made_coord():
     coords = HandMadeCoordinates(chrom_info, 100, [i for i in range(4)], "helper/handMade.txt")

@@ -1,4 +1,3 @@
-from common import Chromosome_Info, Chromosome_Info_For_Simple
-from .Sequences import Sequences
+from .Sequences import Sequences, DNASequence
 
-__all__ = ['Chromosome_Info', 'Chromosome_Info_For_Simple', 'Sequences']
+__all__ = ['Sequences']

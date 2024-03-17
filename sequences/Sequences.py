@@ -1,5 +1,6 @@
 from common import Chromosome_Info, Chromosome_Info_For_Simple
 import math
+import torch
 
 class Sequences():
 
@@ -33,24 +34,26 @@ class DNASequence(Sequences):
         self.fa_path = fa_path
 
     def to_one_hot(self, lines : str, WINDOW_SIZE : int):
+        G = torch.zeros((WINDOW_SIZE,))
+        T = torch.zeros((WINDOW_SIZE,))
+        A = torch.zeros((WINDOW_SIZE,))
+        C = torch.zeros((WINDOW_SIZE,))
+        
         j = 0
-        G = [0] * WINDOW_SIZE
-        T = [0] * WINDOW_SIZE
-        A = [0] * WINDOW_SIZE
-        C = [0] * WINDOW_SIZE
         for i in lines:
-            if (i == 'G'):
+            if i == 'G':
                 G[j] = 1
-            elif (i == 'T'):
+            elif i == 'T':
                 T[j] = 1
-            elif (i == 'A'):
+            elif i == 'A':
                 A[j] = 1
-            elif (i == 'C'):
+            elif i == 'C':
                 C[j] = 1
-            elif (i != 'N'):
+            elif i != 'N':
                 continue
             j += 1
-        return [G, T, A, C]
+        
+        return torch.stack([G, T, A, C])
     
     def get_location(self, chr_info : Chromosome_Info, start, WINDOW_SIZE : int):
         assert start >= 0, 'Start position must be non-negative'
@@ -75,6 +78,9 @@ class DNASequence(Sequences):
                 
 
             return self.to_one_hot(lines, WINDOW_SIZE)
+    
+    def get_name(self):
+        return "dnaseq"
 
 class BlankSequence(Sequences):
 
@@ -85,3 +91,11 @@ class BlankSequence(Sequences):
 
     def get_lines(self, chr: int, start: int, end : int, WINDOW_SIZE: int):
         return
+
+    def get_name(self):
+        return "blankseq"
+
+if __name__ == '__main__':
+    dna_seq = DNASequence("helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 
+                    "helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa")
+    dna_seq.get_name()
