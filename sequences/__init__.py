@@ -1,3 +1,3 @@
-from .Sequences import Sequences, DNASequence
+from .Sequences import Sequences, DNASequence, BlankSequence, DNASequenceWithFasta
 
-__all__ = ['Sequences']
+__all__ = ['Sequences', 'BlankSequence', 'DNASequenceWithFasta']

@@ -6,20 +6,16 @@ import random
 class CoordinateBase():
 
     # Constructor
-    def __init__(self, chr_bounds : List[Chromosome_Info], window_size : int, 
-                 chromosomes : List[int]):
+    def __init__(self, chr_bounds : List[Chromosome_Info], window_size : int):
         self.chr_bounds = chr_bounds
         self.window_size = window_size
-        self.chromosomes = chromosomes
 
 class HandMadeCoordinates(CoordinateBase):
 
-    def __init__(self, chr_bounds : List[Chromosome_Info], window_size : int,
-                  chromosomes : List[int], file_path : str):
+    def __init__(self, chr_bounds : List[Chromosome_Info], window_size : int, file_path : str):
         super().__init__(
             chr_bounds,
             window_size, 
-            chromosomes
         )
         self.file_path = file_path
         self.cur_pos = -1
@@ -45,12 +41,10 @@ class HandMadeCoordinates(CoordinateBase):
 
 class RandomCoordinates(CoordinateBase):
 
-    def __init__(self, chr_bounds : List[Chromosome_Info], window_size : int,
-                  chromosomes : List[int], seed):
+    def __init__(self, chr_bounds : List[Chromosome_Info], window_size : int, seed):
         super().__init__(
             chr_bounds,
-            window_size, 
-            chromosomes
+            window_size
         )
         random.seed(seed)
         self.state = random.getstate()

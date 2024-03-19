@@ -1,6 +1,8 @@
 from common import Chromosome_Info, Chromosome_Info_For_Simple
 import math
 import torch
+import pyfaidx
+from sequences.toonehot import toonehot
 
 class Sequences():
 
@@ -94,6 +96,24 @@ class BlankSequence(Sequences):
 
     def get_name(self):
         return "blankseq"
+
+
+class DNASequenceWithFasta(Sequences):
+
+    def __init__(self, fai_path : str, fa_path : str):
+        super().__init__(
+            fai_path,
+        )
+        self.fa_path = fa_path
+        self.genome = pyfaidx.Fasta(self.fa_path)
+
+    def get_lines(self, chr: int, start: int, end : int, WINDOW_SIZE: int):
+            seq = self.genome["chr1"][start:start+WINDOW_SIZE].seq
+            return torch.tensor(toonehot(seq, {"A" : 0, "C" : 1, "G" : 2, "T": 3}))
+
+    
+    def get_name(self):
+        return "dnaseq"
 
 if __name__ == '__main__':
     dna_seq = DNASequence("helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 

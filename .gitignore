@@ -14,6 +14,9 @@ coords/__pycache__
 # sequences
 /sequences/__pycache__
 /sequences/helper/
+sequences/build/
+/sequences/toonehot.c
+/sequences/toonehot.cpython-311-x86_64-linux-gnu.so
 
 # characteristics
 /characteristics/__pycache__
@@ -21,6 +24,8 @@ coords/__pycache__
 characteristics/interval.all.obs_1.bw
 resfold/
 file_paths.txt
+
+/build
 
 __pycache__
 .pytest_cache
