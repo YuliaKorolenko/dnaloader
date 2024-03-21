@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import pickle
 from common import Chromosome_Info, Chromosome_Info_For_Simple
+from sys import getsizeof
 
 class Сharacteristic():
 
@@ -68,15 +69,18 @@ class СharacteristicBigWig(Сharacteristic):
                     data_map[j + pos] = value
 
             j += chrom_size
+            del chrom_size
+            del values
+            del pos
         
         bw.close()
 
         # save hash table into file
         file_basename = os.path.basename(file_name)
-        output_path = os.path.join(self.folder_res, file_basename.replace(".bw", "_hm.txt"))
-        with open(output_path, "w") as file:
-            for key, value in data_map.items():
-                file.write(str(key) + "\t" + str(value) + "\n")
+        output_path = os.path.join(self.folder_res, file_basename.replace(".bw", "_m.pickle"))
+
+        with open(output_path, "wb") as file:
+            pickle.dump(data_map, file)
 
         chr_info_path = os.path.join(self.folder_res, "chr_info.pickle")
         # save chomosome info file
@@ -88,26 +92,20 @@ class СharacteristicBigWig(Сharacteristic):
         print("read_bw")
 
         for filename in os.listdir(self.folder_res):
-            data_map = dict()
-            
-            if filename.endswith("hm.txt"):
+            if filename.endswith("m.pickle"):
                 file_path = os.path.join(self.folder_res, filename)
-                with open(file_path, "r") as file:
-                    for line in file:
-                        key, value = line.strip().split("\t")
-                        data_map[key] = float(value)
-            
-                self.data_vector.append(data_map)
+                with open(file_path, "rb") as file:
+                    loaded_map = pickle.load(file)
+                    self.data_vector.append(loaded_map)
 
     def get_lines(self, chr : int, start : int, WINDOW_SIZE : int):
         result_tensor = torch.zeros((len(self.data_vector), WINDOW_SIZE))
         for idx, cur_map in enumerate(self.data_vector):
-            # ans = torch.zeros(WINDOW_SIZE)
             new_start = self.chr_info[chr].start_pos + start
-            for i in (0, WINDOW_SIZE):
+            for i in range(WINDOW_SIZE):
                 if (new_start+i) in cur_map:
-                    result_tensor[idx][i] = cur_map[new_start+i]
-
+                    cur_map[new_start+i]
+                    result_tensor[idx][i]
         return result_tensor
 
     def get_name(self):

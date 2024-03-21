@@ -3,6 +3,9 @@ from sequences import DNASequence, BlankSequence, DNASequenceWithFasta
 from samplers import _DnaDataset
 from torch.utils.data import DataLoader
 import time
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
 
 import numpy as np
 
@@ -20,6 +23,7 @@ from selene_sdk.sequences import Genome
 from selene_sdk.samplers import RandomPositionsSampler
 from selene_sdk.samplers import SamplerDataLoader
 import threading
+import matplotlib.pyplot as plt
 
 class GenomicSignalFeatures(Target):
     """
@@ -86,15 +90,7 @@ class GenomicSignalFeatures(Target):
             wigmat[np.isnan(wigmat)] = 0
         return wigmat
 
-if __name__ == '__main__':
-    window_len = 100000
-    batch_size = 16
-    num_of_iterations = 10
-    num_worker = 1
-
-    chr_big_wig = СharacteristicBigWig("/home/ojpochemy/dnaloader/resfold", 1)
-    dna_seq = DNASequenceWithFasta("/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 
-                    "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa")
+def get_my_time(window_len, chr_big_wig, dna_seq,  batch_size, num_of_iterations, num_worker):
     dna_dataset = _DnaDataset(window_len, dna_seq, chr_big_wig, 4)
     datal = DataLoader(dna_dataset, num_workers = num_worker, batch_size = batch_size)
 
@@ -106,43 +102,10 @@ if __name__ == '__main__':
             break
     end_time = time.time() 
     print("end time my dna-loader ", end_time - start_time)
+    del datal
+    return end_time - start_time
 
-
-    bigwig_file_1 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_1.bw" 
-    bigwig_file_2 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_2.bw" 
-    bigwig_file_3 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_3.bw" 
-    bigwig_file_4 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_4.bw" 
-    bigwig_file_5 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_5.bw" 
-    ref_file = "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
-
-    target = GenomicSignalFeatures(
-        input_paths=[bigwig_file_1, bigwig_file_2, bigwig_file_3, bigwig_file_4, bigwig_file_5],
-        features=[], # doing nothing here
-        shape=(window_len,),
-    )
-
-    ref_genome = Genome(
-        input_path=ref_file,
-        blacklist_regions="hg38",
-    )
-
-    sampler = RandomPositionsSampler(
-        reference_sequence=ref_genome,
-        target=target,
-        features=['r1000'], # again doing nothing here
-        test_holdout=['chr8'],
-        validation_holdout=['chr9'],
-        sequence_length=window_len,
-        center_bin_to_predict=window_len,
-        position_resolution=1,
-        random_shift=0,
-        random_strand=False,
-        seed=239
-    )
-
-    sampler.mode = "train"
-
-    loader = SamplerDataLoader(sampler, num_workers=num_worker, batch_size=batch_size)
+def get_selene_time():
 
     j = 0
     start_time = time.time() 
@@ -155,3 +118,95 @@ if __name__ == '__main__':
             break
     end_time = time.time() 
     print("end time selene ", end_time - start_time)
+    return end_time - start_time
+
+
+if __name__ == '__main__':
+    window_len = 100
+    num_of_iterations = 10
+    num_worker = 1
+
+    chr_big_wig = СharacteristicBigWig("/home/ojpochemy/dnaloader/resfold", 5, "/home/ojpochemy/dnaloader/file_paths.txt")
+    dna_seq = DNASequenceWithFasta("/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 
+                    "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa")
+    
+    dna_dataset = _DnaDataset(3, dna_seq, chr_big_wig, 4)
+    datal = DataLoader(dna_dataset, num_workers = num_worker, batch_size = 2)
+
+    bigwig_file_1 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_1.bw" 
+    bigwig_file_2 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_2.bw" 
+    bigwig_file_3 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_3.bw" 
+    bigwig_file_4 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_4.bw" 
+    bigwig_file_5 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_5.bw" 
+    bigwig_file_6 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_6.bw" 
+    bigwig_file_7 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_7.bw" 
+    bigwig_file_8 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_8.bw" 
+    bigwig_file_9 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_9.bw" 
+    bigwig_file_10 = "/home/ojpochemy/SamplerBigWig/foldbigwig/interval.all.obs_10.bw" 
+    ref_file = "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+
+    my_time = []
+    selene_time = []
+    window_sizes = []
+    for i in range (4, 9):
+        window_len = 100000
+        batch_size = 2**i 
+        window_sizes.append(batch_size)
+        num_of_iterations = 10
+        num_worker = 1
+        target = GenomicSignalFeatures(
+            input_paths=[bigwig_file_1, bigwig_file_2, bigwig_file_3, bigwig_file_4, bigwig_file_5,
+            bigwig_file_6, bigwig_file_7, bigwig_file_8, bigwig_file_9, bigwig_file_10],
+            features=[], # doing nothing here
+            shape=(window_len,),
+        )
+
+        ref_genome = Genome(
+            input_path=ref_file,
+            blacklist_regions="hg38",
+        )
+
+        sampler = RandomPositionsSampler(
+            reference_sequence=ref_genome,
+            target=target,
+            features=['r1000'], # again doing nothing here
+            test_holdout=['chr1', 'chr2', 'chr3'],
+            validation_holdout=['chr9'],
+            sequence_length=window_len,
+            center_bin_to_predict=window_len,
+            position_resolution=1,
+            random_shift=0,
+            random_strand=False,
+            seed=239
+        )
+
+        sampler.mode = "train"
+
+        loader = SamplerDataLoader(sampler, num_workers=num_worker, batch_size=batch_size)
+
+        t1 = get_my_time(window_len, chr_big_wig, dna_seq, batch_size, num_of_iterations, num_worker)
+        my_time.append(t1)
+        t2 = get_selene_time()
+        selene_time.append(t2)
+
+    df = pd.DataFrame({
+        'Batch size': window_sizes,
+        'My loader': my_time,
+        'Selene loader': selene_time
+    })
+
+    # Устанавливаем стиль seaborn
+    sns.set(style="darkgrid")
+
+    # Создаем график с помощью Seaborn
+    sns.lineplot(data=df, x='Batch size', y='My loader', label='My loader')
+    sns.lineplot(data=df, x='Batch size', y='Selene loader', label='Selene loader')
+    plt.xlabel('Batch size')
+    plt.ylabel('Time in seconds')
+    plt.title('Time vs Batch size with window len 100000 and num of iteration 10')
+    plt.legend()
+
+
+    # Сохраняем график в файл "selenevsmy.png"
+    plt.savefig('selenevsmy4.png')
+    plt.show()

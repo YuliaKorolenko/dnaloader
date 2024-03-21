@@ -108,12 +108,17 @@ class DNASequenceWithFasta(Sequences):
         self.genome = pyfaidx.Fasta(self.fa_path)
 
     def get_lines(self, chr: int, start: int, end : int, WINDOW_SIZE: int):
-            seq = self.genome["chr1"][start:start+WINDOW_SIZE].seq
+            cur_chr = "chr%d" % (chr + 1)
+            if (chr == 22):
+                cur_chr = "chrX"
+            if (chr == 23):
+                cur_chr = "chrY" 
+            seq = self.genome[cur_chr][start:start+WINDOW_SIZE].seq
             return torch.tensor(toonehot(seq, {"A" : 0, "C" : 1, "G" : 2, "T": 3}))
 
     
     def get_name(self):
-        return "dnaseq"
+        return "fastadnaseq"
 
 if __name__ == '__main__':
     dna_seq = DNASequence("helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 
