@@ -1,5 +1,5 @@
 import sys
-from characteristics import СharacteristicBigWig, Characteristics
+from characteristics import СharacteristicBigWig, Characteristics, СharacteristicBigWigCSR
 from sequences import Sequences, DNASequence, BlankSequence
 from torch.utils.data import Dataset, DataLoader
 from coordinates import RandomCoordinates
@@ -16,6 +16,7 @@ class _DnaDataset(Dataset):
 
     def __getitem__(self, index):
         chr_num, start_ps, end_ps = self.coord.get_next_coord()
+        print(chr_num, start_ps, end_ps)
         seq = self.dna_seq.get_lines(chr_num, start_ps, end_ps, self.window_size)
         bw = self.big_wigs.get_lines(chr_num, start_ps, self.window_size)
         if self.dna_seq.get_name() == "blankseq":
@@ -28,8 +29,10 @@ class _DnaDataset(Dataset):
 
 
 if __name__ == '__main__':
-    chr_big_wig = СharacteristicBigWig("/home/ojpochemy/dna-loader/resfold", 1)
-    dna_seq = DNASequence("/home/ojpochemy/dna-loader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 
-                        "/home/ojpochemy/dna-loader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa")
+    chr_big_wig = СharacteristicBigWigCSR("/home/ojpochemy/dnaloader/resfold", 1)
+    dna_seq = DNASequence("/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 
+                        "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa")
     dna_dataset = _DnaDataset(3, dna_seq, chr_big_wig, 4)
-    datal = DataLoader(dna_dataset, num_workers = 2, batch_size = 3)
+    datal = DataLoader(dna_dataset, num_workers = 2, batch_size = 1)
+    for k in datal:
+        print(k)

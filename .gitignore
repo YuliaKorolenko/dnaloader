@@ -20,6 +20,9 @@ sequences/build/
 
 # characteristics
 /characteristics/__pycache__
+/characteristics/test_pyx.py
+/characteristics/bwhelper.cpython-311-x86_64-linux-gnu.so
+/characteristics/bwhelper.с
 
 characteristics/interval.all.obs_1.bw
 resfold/
