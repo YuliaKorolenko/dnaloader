@@ -22,7 +22,7 @@ sequences/build/
 /characteristics/__pycache__
 /characteristics/test_pyx.py
 /characteristics/bwhelper.cpython-311-x86_64-linux-gnu.so
-/characteristics/bwhelper.с
+/characteristics/bwhelper.c
 
 characteristics/interval.all.obs_1.bw
 resfold/
@@ -32,6 +32,7 @@ file_paths.txt
 
 __pycache__
 .pytest_cache
+/test_with_csr.py
 
 
 

@@ -4,14 +4,32 @@ import math
 import numpy as np
 import torch
 import psutil
+import pickle
 from common import Chromosome_Info, Chromosome_Info_For_Simple
 from sys import getsizeof
+from dataclasses import dataclass
+from typing import List
 from characteristics.bwhelper import generate_array_from_matric, write_array_to_file, read_numbers_from_file, read_and_convert_numbers_from_file
+
+@dataclass
+class Bw_Meta:
+    number_of_bw : int
+    chromosome_info_list : List[Chromosome_Info]
 
 class Сharacteristic():
 
-    def __init__(self, path :  str):
+    def __init__(self, path : str):
         self.path = path
+
+    def get_chr_name(self, i : int):
+        chr = "chr"
+        if i == 23:
+            chr += "X"
+        elif i == 24:
+            chr += "Y"
+        else:
+            chr += str(i)
+        return(chr)
 
 class СharacteristicBigWig(Сharacteristic):
 
@@ -122,43 +140,58 @@ class СharacteristicBigWigCSR(Сharacteristic):
         super().__init__(
             path,
         )
-        self.bw_count = 10
         self.folder_res = folder_res
         self.size_of_bw = size_of_bw
         self.index_in_row = []
         if (path != ""):
-            self.prerpocess_all()
+            file_paths = []
+            with open(self.path, 'r') as file:
+                for line in file:
+                    file_paths.append(line.strip()) 
+            # тут проверять, что есть хотя бы один биг виг
+            if not os.path.exists(self.folder_res):
+                os.makedirs(self.folder_res)
+            self.preprocess_meta(file_paths, 1)
+            self.prerpocess_all(file_paths)
         if (len(self.index_in_row) == 0):
+            # тут нормальные пути и проверить, что есть такие файлы, если нет, то кинуть ошибку и попросить перезагрузить
             self.index_in_row = np.load('resfold/my_array.npy')
-        self.chr_info = [Chromosome_Info(number=0, start_pos=0, lenght=len(self.index_in_row))]
+            with open('resfold/bw_meta.pickle', 'rb') as file:
+                self.bw_meta = pickle.load(file)
 
     def get_max_array_size(self):
         available_memory = psutil.virtual_memory().available
         dtype_size = np.dtype(np.int64).itemsize 
-        max_elements = available_memory // dtype_size // self.big_wig_count
-        # добавить деление на количество биг вигов
-        return max_elements // 2
+        max_elements = available_memory // dtype_size
+        return max_elements // self.bw_meta.number_of_bw // 10
         
+    def preprocess_meta(self, file_paths, chrom_count : int):
+        chrom_lists = []
+        file_name = file_paths[0]
+        bw = pyBigWig.open(file_name)
+        cur_pos = 0
+        for i in range(1, chrom_count + 1):
+            chrom_size = bw.chroms(self.get_chr_name(i))
+            chrom_lists.append(Chromosome_Info(number=i, start_pos=cur_pos, lenght=chrom_size))
+            cur_pos += chrom_size
+
+        # save metadata
+        self.bw_meta = Bw_Meta(len(file_paths), chrom_lists)
+        full_path_meta = os.path.join(self.folder_res, 'bw_meta.pickle')
+        with open(full_path_meta, 'wb') as f:
+            pickle.dump(self.bw_meta, f)
     
-    def prerpocess_all(self):
-        if not os.path.exists(self.folder_res):
-            os.makedirs(self.folder_res)
-        file_paths = []
-        with open(self.path, 'r') as file:
-            for line in file:
-                file_paths.append(line.strip()) 
-        self.big_wig_count = len(file_paths)   
+    def prerpocess_all(self, file_paths):
         self.preprocess_subsequence(file_paths)   
 
     def preprocess_subsequence(self, file_paths):
         last_post_in_file = 0
         cur_pos = 0
-        # я бы создала перед этим chr_info
         chrom_size = 1
 
         while cur_pos < chrom_size:
             cur_array = []
-            cur_range = self.get_max_array_size() // self.bw_count
+            cur_range = self.get_max_array_size()
             for file_name in file_paths:
                 print(file_name)
                 bw = pyBigWig.open(file_name)
@@ -198,7 +231,7 @@ class СharacteristicBigWigCSR(Сharacteristic):
     def get_lines_1(self, chr : int, start : int, WINDOW_SIZE : int):
         start_in_file = self.index_in_row[start]
         end_posit = self.index_in_row[start + WINDOW_SIZE]
-        answer = torch.zeros(self.bw_count, WINDOW_SIZE).type(torch.LongTensor)
+        answer = torch.zeros(self.bw_meta.number_of_bw, WINDOW_SIZE).type(torch.LongTensor)
         if (end_posit - start_in_file == 0):
             return answer
 
@@ -222,13 +255,13 @@ class СharacteristicBigWigCSR(Сharacteristic):
 
         cur_res = read_numbers_from_file('resfold/res.bin', end_posit - start_in_file, start_in_file)
         return read_and_convert_numbers_from_file(start_in_file, end_posit, WINDOW_SIZE, np.array(cur_res, dtype=np.int64), len(self.index_in_row),
-            self.index_in_row[start : start + WINDOW_SIZE + 1], self.bw_count)
+            self.index_in_row[start : start + WINDOW_SIZE + 1], self.bw_meta.number_of_bw)
 
     def get_name(self):
         return "bwcsr"
 
     def get_chr_info(self):
-        return self.chr_info
+        return self.bw_meta.chromosome_info_list
 
 
 if __name__ == '__main__':
