@@ -120,8 +120,9 @@ def get_selene_time(num_of_iterations):
 if __name__ == '__main__':
 
     chr_big_wig = СharacteristicBigWigCSR("/home/ojpochemy/dnaloader/resfold", 1)
+    # dna_seq = BlankSequence("/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai")
     dna_seq = DNASequenceWithFasta("/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 
-                    "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa")
+                                   "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa")
 
     bigwig_file_1 = "/home/ojpochemy/SamplerBigWig/foldbigwig0/interval.all.obs_1.bw" 
     bigwig_file_2 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_2.bw" 
@@ -139,11 +140,11 @@ if __name__ == '__main__':
     selene_time = []
     window_sizes = []
     for i in range (0, 1):
-        window_len = 4000
+        window_len = 1000000
         batch_size = 1 
         window_sizes.append(batch_size)
-        num_of_iterations = 4000
-        num_worker = 1
+        num_of_iterations = 10
+        num_worker = 4
         target = GenomicSignalFeatures(
             input_paths=[bigwig_file_1, bigwig_file_2, bigwig_file_3, bigwig_file_4, bigwig_file_5,
             bigwig_file_6, bigwig_file_7, bigwig_file_8, bigwig_file_9, bigwig_file_10],

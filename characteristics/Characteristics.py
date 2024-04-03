@@ -6,7 +6,7 @@ import torch
 import psutil
 from common import Chromosome_Info, Chromosome_Info_For_Simple
 from sys import getsizeof
-from characteristics.bwhelper import generate_array_from_matric, write_array_to_file, read_numbers_from_file
+from characteristics.bwhelper import generate_array_from_matric, write_array_to_file, read_numbers_from_file, read_and_convert_numbers_from_file
 
 class Сharacteristic():
 
@@ -122,6 +122,7 @@ class СharacteristicBigWigCSR(Сharacteristic):
         super().__init__(
             path,
         )
+        self.bw_count = 10
         self.folder_res = folder_res
         self.size_of_bw = size_of_bw
         self.index_in_row = []
@@ -129,7 +130,7 @@ class СharacteristicBigWigCSR(Сharacteristic):
             self.prerpocess_all()
         if (len(self.index_in_row) == 0):
             self.index_in_row = np.load('resfold/my_array.npy')
-        self.chr_info = [Chromosome_Info(number=0, start_pos=0, lenght=1000000)]
+        self.chr_info = [Chromosome_Info(number=0, start_pos=0, lenght=len(self.index_in_row))]
 
     def get_max_array_size(self):
         available_memory = psutil.virtual_memory().available
@@ -157,7 +158,7 @@ class СharacteristicBigWigCSR(Сharacteristic):
 
         while cur_pos < chrom_size:
             cur_array = []
-            cur_range = self.get_max_array_size() // 10
+            cur_range = self.get_max_array_size() // self.bw_count
             for file_name in file_paths:
                 print(file_name)
                 bw = pyBigWig.open(file_name)
@@ -194,17 +195,16 @@ class СharacteristicBigWigCSR(Сharacteristic):
             cur_pos += cur_range
 
     
-    def get_lines(self, chr : int, start : int, WINDOW_SIZE : int):
+    def get_lines_1(self, chr : int, start : int, WINDOW_SIZE : int):
         start_in_file = self.index_in_row[start]
         end_posit = self.index_in_row[start + WINDOW_SIZE]
-        answer = torch.zeros(10, WINDOW_SIZE)
+        answer = torch.zeros(self.bw_count, WINDOW_SIZE).type(torch.LongTensor)
         if (end_posit - start_in_file == 0):
             return answer
 
         cur_res = read_numbers_from_file('resfold/res.bin', end_posit - start_in_file, start_in_file)
         j = 0
         i = 0
-        answer = torch.zeros(10, WINDOW_SIZE).type(torch.LongTensor)
         while j < len(self.index_in_row) and i < WINDOW_SIZE:
             count_in_cur_row = self.index_in_row[start + i + 1] - self.index_in_row[start + i]
             j_in_row = 0
@@ -215,6 +215,14 @@ class СharacteristicBigWigCSR(Сharacteristic):
             i += 1
 
         return answer
+    
+    def get_lines(self, chr : int, start : int, WINDOW_SIZE : int):
+        start_in_file = self.index_in_row[start]
+        end_posit = self.index_in_row[start + WINDOW_SIZE]
+
+        cur_res = read_numbers_from_file('resfold/res.bin', end_posit - start_in_file, start_in_file)
+        return read_and_convert_numbers_from_file(start_in_file, end_posit, WINDOW_SIZE, np.array(cur_res, dtype=np.int64), len(self.index_in_row),
+            self.index_in_row[start : start + WINDOW_SIZE + 1], self.bw_count)
 
     def get_name(self):
         return "bwcsr"
