@@ -119,35 +119,29 @@ def get_selene_time(num_of_iterations):
 
 if __name__ == '__main__':
 
-    chr_big_wig = СharacteristicBigWigCSR("/home/ojpochemy/dnaloader/resfold", 1)
+    chr_big_wig = СharacteristicBigWigCSR("/home/ojpochemy/dnaloader/resfold", 3)
     # dna_seq = BlankSequence("/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai")
     dna_seq = DNASequenceWithFasta("/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai", 
                                    "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa")
 
-    bigwig_file_1 = "/home/ojpochemy/SamplerBigWig/foldbigwig0/interval.all.obs_1.bw" 
-    bigwig_file_2 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_2.bw" 
-    bigwig_file_3 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_3.bw" 
-    bigwig_file_4 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_4.bw" 
-    bigwig_file_5 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_5.bw" 
-    bigwig_file_6 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_6.bw" 
-    bigwig_file_7 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_7.bw" 
-    bigwig_file_8 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_8.bw" 
-    bigwig_file_9 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_9.bw" 
-    bigwig_file_10 = "/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_10.bw" 
+    array_fold_0 = ["/home/ojpochemy/SamplerBigWig/foldbigwig0/interval.all.obs_1.bw"]
+    array_fold_1 = ["/home/ojpochemy/SamplerBigWig/foldbigwig1/interval.all.obs_" + str(t) + ".bw" for t in range(2, 11)]
+    array_fold_10 = ["/home/ojpochemy/SamplerBigWig/foldbigwig10/interval.all.obs_" + str(t) + ".bw"  for t in range(11, 21)]
+    array_fold_20 = ["/home/ojpochemy/SamplerBigWig/foldbigwig20/interval.all.obs_" + str(t) + ".bw"  for t in range(21, 31)]
+
     ref_file = "/home/ojpochemy/dnaloader/sequences/helper/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 
     my_time = []
     selene_time = []
     window_sizes = []
-    for i in range (0, 1):
-        window_len = 1000000
+    for i in range (1, 11):
+        window_len = 100000 * i
         batch_size = 1 
-        window_sizes.append(batch_size)
-        num_of_iterations = 10
-        num_worker = 4
+        window_sizes.append(window_len)
+        num_of_iterations = 50
+        num_worker = 1
         target = GenomicSignalFeatures(
-            input_paths=[bigwig_file_1, bigwig_file_2, bigwig_file_3, bigwig_file_4, bigwig_file_5,
-            bigwig_file_6, bigwig_file_7, bigwig_file_8, bigwig_file_9, bigwig_file_10],
+            input_paths= array_fold_0 + array_fold_1 + array_fold_10 + array_fold_20,
             features=[], # doing nothing here
             shape=(window_len,),
         )
@@ -181,23 +175,23 @@ if __name__ == '__main__':
         selene_time.append(t2)
 
     df = pd.DataFrame({
-        'Batch size': window_sizes,
+        'Window size': window_sizes,
         'My loader': my_time,
         'Selene loader': selene_time
     })
 
-    # # Устанавливаем стиль seaborn
-    # sns.set(style="darkgrid")
+    # Устанавливаем стиль seaborn
+    sns.set(style="darkgrid")
 
-    # # Создаем график с помощью Seaborn
-    # sns.lineplot(data=df, x='Batch size', y='My loader', label='My loader')
-    # sns.lineplot(data=df, x='Batch size', y='Selene loader', label='Selene loader')
-    # plt.xlabel('Batch size')
-    # plt.ylabel('Time in seconds')
-    # plt.title('Time vs Batch size with window len 100000 and num of iteration 10')
-    # plt.legend()
+    # Создаем график с помощью Seaborn
+    sns.lineplot(data=df, x='Window size', y='My loader', label='My loader')
+    sns.lineplot(data=df, x='Window size', y='Selene loader', label='Selene loader')
+    plt.xlabel('Window size')
+    plt.ylabel('Time in seconds')
+    plt.title('Time vs Window size with batch size 1 and num of iteration 50')
+    plt.legend()
 
 
-    # # Сохраняем график в файл "selenevsmy.png"
-    # plt.savefig('selenevsmy4.png')
-    # plt.show()
+    # Сохраняем график в файл "selenevsmy.png"
+    plt.savefig('selenevsmy5.png')
+    plt.show()

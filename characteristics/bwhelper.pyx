@@ -25,8 +25,8 @@ def generate_array_from_matric(np.ndarray[np.int32_t, ndim=2] arr, int start_pos
 
     return arr_col_data, index_pointers
 
-def write_array_to_file(const char* filename, np.ndarray[np.int64_t, ndim=1] arr, mode):
-    cdef FILE* file = fopen(filename, mode)  
+def write_array_to_file(filename, np.ndarray[np.int64_t, ndim=1] arr, mode):
+    cdef FILE* file = fopen(filename.encode(), mode)  
     # Open file in binary write mode    
     if file == NULL:        
         raise FileNotFoundError("Failed to open file for writing")
@@ -64,10 +64,10 @@ def read_numbers_from_file(filename, int n, int start_el):
     fclose(file)
     return numbers
 
-def read_and_convert_numbers_from_file(int start_in_file, int end_posit, int window_size, np.ndarray[np.int64_t, ndim=1] cur_res, int len_chr,
+def read_and_convert_numbers_from_file(int window_size, np.ndarray[np.int64_t, ndim=1] cur_res, int len_chr,
                                        np.ndarray[np.double_t, ndim=1] indixies, int bw_count):
     cdef np.ndarray[FDTYPE_t, ndim=2] encoding = np.zeros((bw_count, window_size), dtype=np.int32)
-    if (end_posit - start_in_file):
+    if (len(cur_res) == 0):
         return encoding
     cdef int j = 0
     cdef int i = 0
