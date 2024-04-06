@@ -137,20 +137,30 @@ class СharacteristicBigWig(Сharacteristic):
 
 class СharacteristicBigWigCSR(Сharacteristic):
 
-    def __init__(self, folder_res : str, size_of_bw, path : str = ""):
+    def __init__(self, folder_res : str, size_of_bw : int, type_of_loader : str = "hard", path : str = ""):
         super().__init__(
             path,
         )
         self.folder_res = folder_res
         self.size_of_bw = size_of_bw
-        self.name_of_indexes = os.path.join(self.folder_res, 'indixies.npy')
+        self.name_of_indexes = os.path.join(self.folder_res, 'indixies')
+        self.type_of_loader = type_of_loader
+        if (self.type_of_loader == "hard"):
+            self.name_of_indexes += ".bin"
+        else:
+            self.name_of_indexes += ".npy"
         self.name_of_meta = os.path.join(self.folder_res, 'bw_meta.pickle')
-        self.index_in_row = []
-        if (path != ""):
-            self.prerpocess_all(file_paths)
-        if (len(self.index_in_row) == 0):
-            # проверить, что есть такие файлы, если нет, то кинуть ошибку и попросить перезагрузить
-            self.index_in_row = np.load(self.name_of_indexes)
+        self.index_in_row = np.empty(0)
+        if (path != ''):
+            self.prerpocess_all()
+        else:
+        # проверить, что есть такие файлы, если нет, то кинуть ошибку и попросить перезагрузить
+        # а тут в else флажок? и считывание из pybigWig
+        # тут надо написать что-то типо, если хотите быстрее, то тынете пропроцесс. Пока быстрых данных нет
+            if (len(self.index_in_row) == 0 and self.type_of_loader == "light"):
+                # проверить, что есть такие файлы, если нет, то кинуть ошибку и попросить перезагрузить
+                self.index_in_row = np.load(self.name_of_indexes + '.npy')
+            
             with open(self.name_of_meta, 'rb') as file:
                 self.bw_meta = pickle.load(file)
 
@@ -175,7 +185,7 @@ class СharacteristicBigWigCSR(Сharacteristic):
         with open(self.name_of_meta, 'wb') as f:
             pickle.dump(self.bw_meta, f)
     
-    def prerpocess_all(self, file_paths):
+    def prerpocess_all(self):
         file_paths = []
         with open(self.path, 'r') as file:
             for line in file:
@@ -184,7 +194,30 @@ class СharacteristicBigWigCSR(Сharacteristic):
         if not os.path.exists(self.folder_res):
             os.makedirs(self.folder_res)
         self.preprocess_meta(file_paths)
-        self.preprocess_subsequence(file_paths)   
+        self.preprocess_subsequence(file_paths)  
+        
+    def save_information(self, arr_col_data, chr_name, cur_pos, index_in_row_cur):
+        if (self.type_of_loader == "light"):
+            self.index_in_row = np.append(self.index_in_row[:-1], index_in_row_cur)
+            np.save(self.name_of_indexes + '.npy', self.index_in_row)
+        else:
+            mode =  b'a'
+            # тут когда буду переходить на список хромосом, исправить на проверку первой хромосомы
+            if (cur_pos == 0 and chr_name == "chr1"):
+                    mode = b'wb'
+            if (cur_pos == 0):
+                write_array_to_file(self.name_of_indexes, np.array(index_in_row_cur, dtype=np.int32), mode)
+            else:
+                write_array_to_file(self.name_of_indexes, np.array(index_in_row_cur[1:], dtype=np.int32), mode)
+        del index_in_row_cur
+        
+        name_of_res_file = os.path.join(self.folder_res, "res_" + chr_name + ".bin")
+        if (cur_pos == 0):
+            write_array_to_file(name_of_res_file, np.array(arr_col_data, dtype=np.int32), b'wb')
+        else:
+            write_array_to_file(name_of_res_file, np.array(arr_col_data, dtype=np.int32), b'a')
+
+        del arr_col_data
 
     def preprocess_subsequence(self, file_paths):
         for num_chr in range(1, self.size_of_bw + 1):
@@ -198,7 +231,6 @@ class СharacteristicBigWigCSR(Сharacteristic):
                     cur_array = []
                     cur_range = self.get_max_array_size()
                     for file_name in file_paths:
-                        # print(file_name)
                         bw = pyBigWig.open(file_name)
                         values = bw.values(chr_name, cur_pos, min(cur_pos+cur_range, chrom_size))
                         cur_array.append(values)
@@ -212,63 +244,59 @@ class СharacteristicBigWigCSR(Сharacteristic):
                                 res_matrix[j][i] = int(cur_array[i][j])
                     del cur_array
 
-                    arr_col_data, index_in_row = generate_array_from_matric(res_matrix, last_post_in_file)
+                    arr_col_data, index_in_row_cur = generate_array_from_matric(res_matrix, last_post_in_file)
                     del res_matrix
-                    last_post_in_file = index_in_row[len(index_in_row) - 1] // 2
-                    if cur_pos == 0 and num_chr == 1:
-                        prev_index_row = np.empty(0)
-                    else:
-                        prev_index_row = np.load(self.name_of_indexes)[:-1]
-                    index_in_row = np.append(prev_index_row, index_in_row)
+                    last_post_in_file = index_in_row_cur[len(index_in_row_cur) - 1] // 2
 
-                    np.save(self.name_of_indexes, index_in_row)
-                    self.index_in_row = index_in_row
-                    del index_in_row
-                    del prev_index_row
-
-                    name_of_res_file = os.path.join(self.folder_res, "res_" + chr_name + ".bin")
-                    if (cur_pos == 0):
-                        write_array_to_file(name_of_res_file, np.array(arr_col_data, dtype=np.int64), b'wb')
-                    else:
-                        write_array_to_file(name_of_res_file, np.array(arr_col_data, dtype=np.int64), b'a')
+                    self.save_information(arr_col_data, chr_name, cur_pos, index_in_row_cur)
                     pbar.update(cur_range)
                     cur_pos += cur_range
 
-    
-    def get_lines_1(self, chr : int, start : int, WINDOW_SIZE : int):
-        start_in_file = self.index_in_row[start]
-        end_posit = self.index_in_row[start + WINDOW_SIZE]
-        answer = torch.zeros(self.bw_meta.number_of_bw, WINDOW_SIZE).type(torch.LongTensor)
-        if (end_posit - start_in_file == 0):
-            return answer
-
-        cur_res = read_numbers_from_file(os.path.join(self.folder_res, 'res.bin'), end_posit - start_in_file, start_in_file)
-        j = 0
-        i = 0
-        while j < len(self.index_in_row) and i < WINDOW_SIZE:
-            count_in_cur_row = self.index_in_row[start + i + 1] - self.index_in_row[start + i]
-            j_in_row = 0
-            while (j_in_row < count_in_cur_row):
-                answer[cur_res[j_in_row + j]][i] = cur_res[j_in_row + j + 1]
-                j_in_row += 2
-            j += j_in_row
-            i += 1
-
-        return answer
-
     def get_file_name(self, chr : int):
         return os.path.join(self.folder_res, "res_" + self.get_chr_name(chr + 1) + ".bin")
+
+    def get_indixies(self, WINDOW_SIZE : int, start_in_array : int):
+        if (self.type_of_loader == "light"):
+            start_in_file = self.index_in_row[start_in_array]
+            end_posit = self.index_in_row[start_in_array + WINDOW_SIZE]
+            cur_indixies = self.index_in_row[start_in_array : start_in_array + WINDOW_SIZE + 1]
+            return cur_indixies, start_in_file, end_posit
+        else:
+            cur_indixies = read_numbers_from_file(self.name_of_indexes, WINDOW_SIZE + 1, start_in_array)
+            end_posit = cur_indixies[WINDOW_SIZE]
+            start_in_file = cur_indixies[0]
+            return cur_indixies, start_in_file, end_posit
+
     
     def get_lines(self, chr : int, start : int, WINDOW_SIZE : int):
         start_pos_chr = self.bw_meta.chromosome_info_list[chr].start_pos
         start_in_array = start_pos_chr + start
 
-        start_in_file = self.index_in_row[start_in_array]
-        end_posit = self.index_in_row[start_in_array + WINDOW_SIZE]
-
+        cur_indixies, start_in_file, end_posit = self.get_indixies(WINDOW_SIZE, start_in_array)
+        # print(cur_indixies)
+        # start_in_file = self.index_in_row[start_in_array]
+        # end_posit = self.index_in_row[start_in_array + WINDOW_SIZE]
+        # cur_indixies = self.index_in_row[start_in_array : start_in_array + WINDOW_SIZE + 1]
+        # print("start in file: ", start_in_array, " end: ", end_posit)
+        # print(cur_indixies)
         cur_res = read_numbers_from_file(self.get_file_name(chr), end_posit - start_in_file, start_in_file)
         return read_and_convert_numbers_from_file(WINDOW_SIZE, np.array(cur_res, dtype=np.int64), self.bw_meta.chromosome_info_list[chr].lenght,
-            self.index_in_row[start_in_array : start_in_array + WINDOW_SIZE + 1], self.bw_meta.number_of_bw)
+            np.array(cur_indixies, dtype=np.double), self.bw_meta.number_of_bw)
+
+    def debug_function(self):
+        cur_indixies = read_numbers_from_file(self.name_of_indexes, 100, self.bw_meta.chromosome_info_list[5].start_pos + 1)
+        print(cur_indixies)
+        # j = 0
+        # gap = 1000
+        # while j < len(self.index_in_row):
+        #     cur_indixies = read_numbers_from_file("resfold/indixies.bin", gap, j)
+        #     for i in range(0, gap):
+        #         if (cur_indixies[i] != self.index_in_row[j + i]):
+        #             print("NOT OK: ", cur_indixies[i], " ", self.index_in_row[j + i])
+        #             print(j + i)
+        #             return
+        #     j += gap
+
 
     def get_name(self):
         return "bwcsr"

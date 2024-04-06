@@ -25,7 +25,7 @@ def generate_array_from_matric(np.ndarray[np.int32_t, ndim=2] arr, int start_pos
 
     return arr_col_data, index_pointers
 
-def write_array_to_file(filename, np.ndarray[np.int64_t, ndim=1] arr, mode):
+def write_array_to_file(filename, np.ndarray[np.int32_t, ndim=1] arr, mode):
     cdef FILE* file = fopen(filename.encode(), mode)  
     # Open file in binary write mode    
     if file == NULL:        
@@ -39,8 +39,8 @@ def write_array_to_file(filename, np.ndarray[np.int64_t, ndim=1] arr, mode):
 
 def read_numbers_from_file(filename, int n, int start_el):
     #cdef char buffer[10000000]
-    cdef char* buffer = <char*>(calloc(n, sizeof(int)));
-    cdef int number
+    cdef unsigned char* buffer = <unsigned char*>(calloc(n, sizeof(int)));
+    cdef unsigned int number
     
     cdef FILE* file = fopen(filename.encode(), "rb")
     if file == NULL:

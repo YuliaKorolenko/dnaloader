@@ -16,6 +16,7 @@ class _DnaDataset(Dataset):
 
     def __getitem__(self, index):
         chr_num, start_ps, end_ps = self.coord.get_next_coord()
+        # print(chr_num, start_ps, self.window_size)
         seq = self.dna_seq.get_lines(chr_num, start_ps, end_ps, self.window_size)
         bw = self.big_wigs.get_lines(chr_num, start_ps, self.window_size)
         if self.dna_seq.get_name() == "blankseq":
