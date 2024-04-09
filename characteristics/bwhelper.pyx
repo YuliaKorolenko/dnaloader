@@ -5,6 +5,8 @@ from libc.stdio cimport FILE, fopen, fclose, fread, fgets, fwrite, getline, fsee
 from libc.stdlib cimport malloc, free, atoi, calloc
 cimport libc.stdlib
 from array import array
+import cython
+from cython.parallel import prange
 
 ctypedef np.int32_t FDTYPE_t
 
