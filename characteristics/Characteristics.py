@@ -10,7 +10,8 @@ from sys import getsizeof
 from dataclasses import dataclass
 from typing import List
 from tqdm import tqdm
-from characteristics.bwhelper import generate_array_from_matric, write_array_to_file, read_numbers_from_file, read_and_convert_numbers_from_file
+from memory_profiler import profile
+from characteristics.bwhelper import generate_array_from_matric, write_array_to_file, read_numbers_from_file, read_and_convert_numbers_from_file, generate_array_from_tuples
 
 @dataclass
 class Bw_Meta:
@@ -137,6 +138,7 @@ class СharacteristicBigWig(Сharacteristic):
 
 class СharacteristicBigWigCSR(Сharacteristic):
 
+    # @profile
     def __init__(self, folder_res : str, size_of_bw : int, type_of_loader : str = "hard", path : str = ""):
         super().__init__(
             path,
@@ -170,16 +172,19 @@ class СharacteristicBigWigCSR(Сharacteristic):
         max_elements = available_memory // dtype_size
         return max_elements // self.bw_meta.number_of_bw // 10
         
+    # @profile
     def preprocess_meta(self, file_paths):
         chrom_lists = []
         file_name = file_paths[0]
         bw = pyBigWig.open(file_name)
-        cur_pos = 0
+        cur_pos = -1
         for i in range(1, self.size_of_bw + 1):
+            cur_pos += 1
             chrom_size = bw.chroms(self.get_chr_name(i))
             chrom_lists.append(Chromosome_Info(number=i, start_pos=cur_pos, lenght=chrom_size))
             cur_pos += chrom_size
 
+        del bw, cur_pos, file_name, chrom_size
         # save metadata
         self.bw_meta = Bw_Meta(len(file_paths), chrom_lists)
         with open(self.name_of_meta, 'wb') as f:
@@ -237,20 +242,23 @@ class СharacteristicBigWigCSR(Сharacteristic):
                         del values
                         del bw
                     
-                    res_matrix = np.zeros((len(cur_array[0]), len(cur_array)), dtype=np.int32)
-                    for i in range(len(cur_array)):
-                        for j in range(len(cur_array[i])):
-                            if not math.isnan(cur_array[i][j]):
-                                res_matrix[j][i] = int(cur_array[i][j])
-                    del cur_array
+                    res_array = []
+                    # count of nucleotids
+                    for j in range(len(cur_array[0])):
+                        # count of big wig
+                        for i in range(len(cur_array)):
+                                if not math.isnan(cur_array[i][j]):
+                                    res_array.append((i, j, int(cur_array[i][j])))
+                    del i, j, cur_array
 
-                    arr_col_data, index_in_row_cur = generate_array_from_matric(res_matrix, last_post_in_file)
-                    del res_matrix
+                    arr_col_data, index_in_row_cur = generate_array_from_tuples(res_array, cur_range, last_post_in_file)
+                    del res_array
                     last_post_in_file = index_in_row_cur[len(index_in_row_cur) - 1] // 2
 
                     self.save_information(arr_col_data, chr_name, cur_pos, index_in_row_cur)
                     pbar.update(cur_range)
                     cur_pos += cur_range
+            del chrom_size, chr_name
 
     def get_file_name(self, chr : int):
         return os.path.join(self.folder_res, "res_" + self.get_chr_name(chr + 1) + ".bin")
@@ -271,32 +279,51 @@ class СharacteristicBigWigCSR(Сharacteristic):
     def get_lines(self, chr : int, start : int, WINDOW_SIZE : int):
         start_pos_chr = self.bw_meta.chromosome_info_list[chr].start_pos
         start_in_array = start_pos_chr + start
+        print("start in array: ", start_in_array)
 
         cur_indixies, start_in_file, end_posit = self.get_indixies(WINDOW_SIZE, start_in_array)
-        # print(cur_indixies)
-        # start_in_file = self.index_in_row[start_in_array]
-        # end_posit = self.index_in_row[start_in_array + WINDOW_SIZE]
-        # cur_indixies = self.index_in_row[start_in_array : start_in_array + WINDOW_SIZE + 1]
-        # print("start in file: ", start_in_array, " end: ", end_posit)
-        # print(cur_indixies)
         cur_res = read_numbers_from_file(self.get_file_name(chr), end_posit - start_in_file, start_in_file)
         return read_and_convert_numbers_from_file(WINDOW_SIZE, np.array(cur_res, dtype=np.int64), self.bw_meta.chromosome_info_list[chr].lenght,
             np.array(cur_indixies, dtype=np.double), self.bw_meta.number_of_bw)
 
     def debug_function(self):
-        cur_indixies = read_numbers_from_file(self.name_of_indexes, 100, self.bw_meta.chromosome_info_list[5].start_pos + 1)
-        print(cur_indixies)
-        # j = 0
-        # gap = 1000
-        # while j < len(self.index_in_row):
-        #     cur_indixies = read_numbers_from_file("resfold/indixies.bin", gap, j)
-        #     for i in range(0, gap):
-        #         if (cur_indixies[i] != self.index_in_row[j + i]):
-        #             print("NOT OK: ", cur_indixies[i], " ", self.index_in_row[j + i])
-        #             print(j + i)
-        #             return
-        #     j += gap
+        j = self.bw_meta.chromosome_info_list[14].start_pos
+        gap = 1000
+        while j < len(self.index_in_row):
+            cur_indixies = read_numbers_from_file("resfold/indixies.bin", gap, j)
+            for i in range(0, gap):
+                if (cur_indixies[i] != self.index_in_row[j + i]):
+                    print("NOT OK: ", cur_indixies[i], " ", self.index_in_row[j + i])
+                    print(j + i)
+                    return
+            j += gap
 
+    def debug_function_read(self):
+        print("start debug")
+        print("start position: ", self.bw_meta.chromosome_info_list[1].start_pos)
+        results = read_numbers_from_file(self.name_of_indexes, 500_000, 269245206)
+        print(results[0], results[len(results) - 1])
+
+        print("start position: ", self.bw_meta.chromosome_info_list[1].start_pos)
+        results = read_numbers_from_file("/home/ojpochemy/dnaloader/resfold_hard_1_9/indixies.bin", 500_000, 269245206)
+        print(results[0], results[len(results) - 1])
+
+        # 269245206
+
+
+        # start_pos = self.bw_meta.chromosome_info_list[1].start_pos
+        # with open('/home/ojpochemy/dnaloader/resfold_hard_1_24/indixies.bin', 'rb') as file:
+        #     file.seek(start_pos)  # Move the cursor to position 10000
+        #     data = file.read(100)  # Read 100 elements from that position
+        #     print(data)
+        #     # Разделить последовательность байтов на отдельные байты
+        #     bytes_list = [data[i:i+1] for i in range(0, len(data), 1)]
+
+        #     # Преобразовать каждый байт в число
+        #     numbers = [int.from_bytes(byte, byteorder='big', signed=False) for byte in bytes_list]
+
+        #     print(numbers)
+        print("end debug")
 
     def get_name(self):
         return "bwcsr"

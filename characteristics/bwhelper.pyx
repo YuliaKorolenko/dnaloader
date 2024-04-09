@@ -25,6 +25,27 @@ def generate_array_from_matric(np.ndarray[np.int32_t, ndim=2] arr, int start_pos
 
     return arr_col_data, index_pointers
 
+def generate_array_from_tuples(list tuple_array, int nucleotids_size, int start_pos):
+    cdef int i, j, count_in_row
+    arr_col_data = []
+    index_pointers = []
+
+    count_in_row = start_pos
+
+    # row - (big wig number), coulumn - (nucleotids number), data
+    j = 0
+    for i in range(0, nucleotids_size):
+        index_pointers.append(count_in_row * 2)
+        if (j < len(tuple_array)):
+            while (j < len(tuple_array) and tuple_array[j][1] == i):
+                count_in_row += 1
+                arr_col_data.append(tuple_array[j][0])
+                arr_col_data.append(tuple_array[j][2])
+                j += 1
+    index_pointers.append(count_in_row * 2)
+    del tuple_array
+    return arr_col_data, index_pointers
+
 def write_array_to_file(filename, np.ndarray[np.int32_t, ndim=1] arr, mode):
     cdef FILE* file = fopen(filename.encode(), mode)  
     # Open file in binary write mode    
@@ -37,7 +58,7 @@ def write_array_to_file(filename, np.ndarray[np.int32_t, ndim=1] arr, mode):
     fclose(file)
     return num_written
 
-def read_numbers_from_file(filename, int n, int start_el):
+def read_numbers_from_file(filename, long n, long start_el):
     #cdef char buffer[10000000]
     cdef unsigned char* buffer = <unsigned char*>(calloc(n, sizeof(int)));
     cdef unsigned int number
