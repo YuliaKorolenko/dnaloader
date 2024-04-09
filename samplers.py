@@ -1,27 +1,31 @@
 import sys
-from characteristics import СharacteristicBigWig, Characteristics, СharacteristicBigWigCSR
+from characteristics import СharacteristicBigWig, Сharacteristic, СharacteristicBigWigCSR
 from sequences import Sequences, DNASequence, BlankSequence
 from torch.utils.data import Dataset, DataLoader
 from coordinates import RandomCoordinates
 from common import Chromosome_Info
 import numpy as np
+from typing import List
 
 class _DnaDataset(Dataset):
-    def __init__(self, window_size : int, dna_seq : Sequences, big_wigs : Characteristics, seed = 3):
+    def __init__(self, window_size : int, dna_seq : Sequences, char_list : List[Сharacteristic], seed = 3):
         super(_DnaDataset, self).__init__()
         self.window_size = window_size
         self.dna_seq = dna_seq
-        self.big_wigs = big_wigs
-        self.coord = RandomCoordinates(self.big_wigs.get_chr_info(), self.window_size, seed)
+        self.char_list = char_list
+        # переписать на вовзращение из dna_seq
+        self.coord = RandomCoordinates(self.char_list[0].get_chr_info(), self.window_size, seed)
 
     def __getitem__(self, index):
         chr_num, start_ps, end_ps = self.coord.get_next_coord()
-        # print(chr_num, start_ps, self.window_size)
         seq = self.dna_seq.get_lines(chr_num, start_ps, end_ps, self.window_size)
-        bw = self.big_wigs.get_lines(chr_num, start_ps, self.window_size)
-        if self.dna_seq.get_name() == "blankseq":
-            return {self.big_wigs.get_name() : bw}
-        return {self.big_wigs.get_name() : bw, self.dna_seq.get_name() : seq}
+        print(chr_num, start_ps, end_ps)
+        answer = {}
+        for char_class in self.char_list:
+            answer[char_class.get_name()] = char_class.get_lines(chr_num, start_ps, self.window_size)
+        if self.dna_seq.get_name() != "blankseq":
+            answer[self.dna_seq.get_name()] = seq
+        return answer
 
     def __len__(self):
         return sys.maxsize
