@@ -27,6 +27,28 @@ def generate_array_from_matric(np.ndarray[np.int32_t, ndim=2] arr, int start_pos
 
     return arr_col_data, index_pointers
 
+def generate_hic_from_tuples(list tuple_array, int nucleotids_size, int start_pos, int start_index):
+    cdef int i, j, count_in_row, boarder
+    arr_col_data = []
+    index_pointers = []
+
+    count_in_row = start_pos
+
+    # row - (nucleotids number), coulumn - (difference), data
+    j = 0
+    for i in range(0, nucleotids_size):
+        index_pointers.append(count_in_row * 2)
+        boarder = start_index + i
+        if (j < len(tuple_array)):
+            while (j < len(tuple_array) and tuple_array[j][0] == boarder):
+                count_in_row += 1
+                arr_col_data.append(tuple_array[j][1] - tuple_array[j][0])
+                arr_col_data.append(tuple_array[j][2])
+                j += 1
+    index_pointers.append(count_in_row * 2)
+    del tuple_array
+    return arr_col_data, index_pointers
+
 def generate_array_from_tuples(list tuple_array, int nucleotids_size, int start_pos):
     cdef int i, j, count_in_row
     arr_col_data = []
@@ -80,7 +102,7 @@ def read_numbers_from_file(filename, long n, long start_el):
         numbers.append(number)
     free(buffer)
 
-    # идем по массиву, вычисляем сколько на каждую строку элементов, и потом их бахаем в answer из 
+    # идем по массиву, вычисляем сколько на каждую строку элементов
     # j - указатель в numbers
     # i - указатель в window_size
 
@@ -104,3 +126,32 @@ def read_and_convert_numbers_from_file(int window_size, np.ndarray[np.int64_t, n
         j += j_in_row
         i += 1
     return encoding
+
+def read_convert_to_hic_matrix(start : int, window_size : int):
+    indixies = read_numbers_from_file("lalal/indexies.bin", window_size + 1, start)
+    end_pos = indixies[window_size]
+    start_in_file = indixies[0]
+    
+    len_chr = 10000
+    cur_res = read_numbers_from_file("lalal/vals.bin", end_pos - start_in_file, start_in_file)
+
+    cdef np.ndarray[FDTYPE_t, ndim=2] hic_matrix = np.zeros((window_size, window_size), dtype=np.int32)
+    if (len(cur_res) == 0):
+        return hic_matrix
+    cdef int ofset
+    cdef int j = 0
+    cdef int i = 0
+    cdef int count_in_cur_row, j_in_row
+    while j < len_chr and i < window_size:
+        count_in_cur_row = int(indixies[i + 1] - indixies[i])
+        j_in_row = 0
+        while (j_in_row < count_in_cur_row):
+            # j - отступ от текущей диагонали
+            offset = i + cur_res[j_in_row + j]
+            if (offset < window_size):
+                hic_matrix[i][offset] = cur_res[j_in_row + j + 1]
+                hic_matrix[offset][i] = cur_res[j_in_row + j + 1]
+            j_in_row += 2
+        j += j_in_row
+        i += 1
+    return hic_matrix
