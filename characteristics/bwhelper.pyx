@@ -127,13 +127,12 @@ def read_and_convert_numbers_from_file(int window_size, np.ndarray[np.int64_t, n
         i += 1
     return encoding
 
-def read_convert_to_hic_matrix(start : int, window_size : int):
-    indixies = read_numbers_from_file("lalal/indexies.bin", window_size + 1, start)
+def read_convert_to_hic_matrix(str file_indexies, str file_vals, int start, int window_size):
+    indixies = read_numbers_from_file(file_indexies, window_size + 1, start)
     end_pos = indixies[window_size]
     start_in_file = indixies[0]
     
-    len_chr = 10000
-    cur_res = read_numbers_from_file("lalal/vals.bin", end_pos - start_in_file, start_in_file)
+    cur_res = read_numbers_from_file(file_vals, end_pos - start_in_file, start_in_file)
 
     cdef np.ndarray[FDTYPE_t, ndim=2] hic_matrix = np.zeros((window_size, window_size), dtype=np.int32)
     if (len(cur_res) == 0):
@@ -142,7 +141,7 @@ def read_convert_to_hic_matrix(start : int, window_size : int):
     cdef int j = 0
     cdef int i = 0
     cdef int count_in_cur_row, j_in_row
-    while j < len_chr and i < window_size:
+    while i < window_size:
         count_in_cur_row = int(indixies[i + 1] - indixies[i])
         j_in_row = 0
         while (j_in_row < count_in_cur_row):

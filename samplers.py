@@ -1,5 +1,5 @@
 import sys
-from characteristics import СharacteristicBigWig, Сharacteristic, СharacteristicBigWigCSR
+from characteristics import CharacteristicBigWig, Characteristic, CharacteristicBigWigCSR
 from sequences import Sequences, DNASequence, BlankSequence
 from torch.utils.data import Dataset, DataLoader
 from coordinates import RandomCoordinates
@@ -8,7 +8,7 @@ import numpy as np
 from typing import List
 
 class _DnaDataset(Dataset):
-    def __init__(self, window_size : int, dna_seq : Sequences, char_list : List[Сharacteristic], seed = 3):
+    def __init__(self, window_size : int, dna_seq : Sequences, char_list : List[Characteristic], seed = 3):
         super(_DnaDataset, self).__init__()
         self.window_size = window_size
         self.dna_seq = dna_seq

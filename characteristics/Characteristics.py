@@ -18,7 +18,7 @@ class Bw_Meta:
     number_of_bw : int
     chromosome_info_list : List[Chromosome_Info]
 
-class Сharacteristic():
+class Characteristic():
 
     def __init__(self, path : str):
         self.path = path
@@ -33,7 +33,7 @@ class Сharacteristic():
             chr += str(i)
         return(chr)
 
-class СharacteristicBigWig(Сharacteristic):
+class CharacteristicBigWig(Characteristic):
 
     def __init__(self, folder_res : str, size_of_bw, path : str = ""):
         super().__init__(
@@ -136,7 +136,7 @@ class СharacteristicBigWig(Сharacteristic):
         return self.chr_info
 
 
-class СharacteristicBigWigCSR(Сharacteristic):
+class CharacteristicBigWigCSR(Characteristic):
 
     # @profile
     def __init__(self, folder_res : str, size_of_bw : int, type_of_loader : str = "hard", path : str = ""):
@@ -323,7 +323,7 @@ class СharacteristicBigWigCSR(Сharacteristic):
 
 
 if __name__ == '__main__':
-    chr_big_wig = СharacteristicBigWigCSR("/home/ojpochemy/dna-loader/resfold", 1, "/home/ojpochemy/dna-loader/file_paths.txt")
+    chr_big_wig = CharacteristicBigWigCSR("/home/ojpochemy/dna-loader/resfold", 1, "/home/ojpochemy/dna-loader/file_paths.txt")
     # print(chr_big_wig.get_lines(0, 0, 10))
     # print(chr_big_wig.get_lines(0, 100, 10))
     print(chr_big_wig.get_name())

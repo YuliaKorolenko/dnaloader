@@ -1,1 +1,1 @@
-__all__ = ['sequences', 'common', 'characteristics', 'samplers', 'coordinates']
+__all__ = ['sequences', 'common', 'haracteristics', 'samplers', 'coordinates']

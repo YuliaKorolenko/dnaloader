@@ -1,5 +1,5 @@
-from .Characteristics import Сharacteristic, СharacteristicBigWig, СharacteristicBigWigCSR
-from .CharacteristicsHiC import СharacteristicHiCColer, CharacteristicHiCWithLimit
+from .Characteristics import Characteristic, CharacteristicBigWig, CharacteristicBigWigCSR
+from .CharacteristicsHiC import CharacteristicHiCColer, CharacteristicHiCWithLimit
 
-__all__ = ['Сharacteristic', 'СharacteristicBigWig', 'СharacteristicBigWigCSR',
- 'СharacteristicHiCColer', 'CharacteristicHiCWithLimit']
+__all__ = ['Characteristic', 'CharacteristicBigWig', 'CharacteristicBigWigCSR',
+ 'CharacteristicHiCColer', 'CharacteristicHiCWithLimit']
