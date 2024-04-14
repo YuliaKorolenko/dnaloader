@@ -19,7 +19,7 @@ class _DnaDataset(Dataset):
     def __getitem__(self, index):
         chr_num, start_ps, end_ps = self.coord.get_next_coord()
         seq = self.dna_seq.get_lines(chr_num, start_ps, end_ps, self.window_size)
-        print(chr_num, start_ps, end_ps)
+        # print(chr_num, start_ps, end_ps)
         answer = {}
         for char_class in self.char_list:
             answer[char_class.get_name()] = char_class.get_lines(chr_num, start_ps, self.window_size)
