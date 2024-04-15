@@ -2,4 +2,4 @@ from .Characteristics import Characteristic, CharacteristicBigWig, Characteristi
 from .CharacteristicsHiC import CharacteristicHiCColer, CharacteristicHiCWithLimit
 
 __all__ = ['Characteristic', 'CharacteristicBigWig', 'CharacteristicBigWigCSR',
- 'CharacteristicHiCColer', 'CharacteristicHiCWithLimit']
+           'CharacteristicHiCColer', 'CharacteristicHiCWithLimit']
