@@ -41,27 +41,44 @@ class HiCCollerFormat():
     BINS_WEIGHT = '/bins/weight'
 
     def __init__(self, hic_path: str, bin_size: int) -> None:
+        self.hic_path = hic_path
         self.group = h5py.File(hic_path, 'r')
         self.bin_size = bin_size
 
+    def __get_prefix(self) -> str:
+        """
+        The mcool file has a split into different resolutions.
+        """
+        if self.hic_path.endswith(".cool"):
+            return ''
+        elif self.hic_path.endswith(".mcool"):
+            return f'{self.RESOLUTIONS}{self.bin_size}'
+
     def __get_data(self, directory: str, start: np.int64,
                    end: np.int64) -> pd.DataFrame:
-        return self.group[f'{self.RESOLUTIONS}{self.bin_size}{directory}'][start: end]
+        return self.group[f'{self.__get_prefix()}{directory}'][start: end]
 
     def get_offset(self, chr: int) -> np.int64:
         """
-        Offsets for each chromosome corresponds to the first bin_id_1 in the chromosome
-
-        :param chr: number of chromosome. [0 ... 23]
+        Offsets for each chromosome corresponds to the first bin_id_1 in the chromosome.
+        Len of offset : number of chr + 1 
+        :param chr: number of chromosome. [0 ... number of chr + 1]
         """
-        return self.group[f'{self.RESOLUTIONS}{self.bin_size}{self.INDEXES_CH_OFFSET}'][chr]
+        return self.group[f'{self.__get_prefix()}{self.INDEXES_CH_OFFSET}'][chr]
+
+    def get_chrom_offsets(self) -> pd.core.series.Series:
+        """
+        All offsets for each chromosome
+
+        """
+        return self.group[f'{self.__get_prefix()}{self.INDEXES_CH_OFFSET}']
 
     def get_offset_for_bin1(self, bin_id: np.int64) -> np.int64:
         """
         Offsets for each bin_id_1. CCO records are sorted by bin_id1.
 
         """
-        return self.group[f'{self.RESOLUTIONS}{self.bin_size}{self.INDEXES_BINS}'][bin_id]
+        return self.group[f'{self.__get_prefix()}{self.INDEXES_BINS}'][bin_id]
 
     def get_pixels(self, start: np.int64, end: int) -> pd.DataFrame:
         """
@@ -94,6 +111,12 @@ class HiCCollerFormat():
         weights = self.__get_data(self.BINS_WEIGHT, bin_id_start, bin_id_end)
         return pd.DataFrame(
             {'chrom': chroms, 'start': starts, 'end': ends, 'weight': weights})
+
+    def get_bin_size(self) -> int:
+        """
+        return bin size
+        """
+        return self.group.attrs['bin-size']
 
 
 class HICFull():

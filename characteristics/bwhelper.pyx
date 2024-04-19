@@ -156,8 +156,7 @@ def read_and_convert_light(int window_size, np.ndarray[np.int64_t, ndim=1] cur_r
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def read_convert_to_hic_matrix(str file_indexies, str file_vals, int start, int window_size):
-    indixies = read_numbers_from_file(file_indexies, window_size + 1, start)
+def read_convert_to_hic_matrix(str file_vals, np.ndarray[np.int64_t, ndim=1] indixies, int window_size):
     end_pos = indixies[window_size]
     start_in_file = indixies[0]
     
