@@ -2,7 +2,7 @@
 ### 1. Initialize the 2D track class:
 
 ```
-track_2d = CharacteristicHiCWithLimit(
+track_2d = Characteristic2dWithLimit(
     res_fold="hic_result",
     loader_type="hard",
     hic_path=file_path_mcool)

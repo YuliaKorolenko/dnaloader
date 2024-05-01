@@ -12,20 +12,19 @@
 coords/__pycache__
 
 # sequences
-/sequences/__pycache__
-/sequences/helper/
-sequences/build/
-/sequences/toonehot.c
-/sequences/toonehot.cpython-311-x86_64-linux-gnu.so
+dnaloader/sequences/__pycache__
+dnaloader/sequences/helper/
+dnaloader/sequences/build/
+dnaloader/sequences/toonehot.c
+dnaloader/sequences/toonehot.cpython-311-x86_64-linux-gnu.so
 
 # characteristics
-/characteristics/__pycache__
-/characteristics/test_pyx.py
-/characteristics/bwhelper.cpython-311-x86_64-linux-gnu.so
-/characteristics/bwhelper.c
+dnaloader/characteristics/__pycache__
+dnaloader/characteristics/test_pyx.py
+dnaloader/characteristics/bwhelper.cpython-311-x86_64-linux-gnu.so
+dnaloader/characteristics/bwhelper.c
 
-characteristics/interval.all.obs_1.bw
-resfold/
+dnaloader/characteristics/interval.all.obs_1.bw
 
 /build
 
