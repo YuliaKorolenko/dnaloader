@@ -26,13 +26,13 @@ sequences/build/
 
 characteristics/interval.all.obs_1.bw
 resfold/
-file_paths.txt
 
 /build
 
 __pycache__
 .pytest_cache
 /test_with_csr.py
+pathshelper
 
 
 

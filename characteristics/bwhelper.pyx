@@ -7,6 +7,7 @@ cimport libc.stdlib
 from array import array
 import cython
 from cython.parallel import prange
+import time
 
 ctypedef np.int32_t FDTYPE_t
 
@@ -79,6 +80,8 @@ def write_array_to_file(filename, np.ndarray[np.int32_t, ndim=1] arr, mode):
     for i in range(len(arr)):
         ptr[i] = arr[i]
     cdef size_t num_written = fwrite(ptr, sizeof(int), len(arr), file)
+    del filename, arr, mode
+    free(ptr)
     fclose(file)
     return num_written
 
@@ -161,7 +164,6 @@ def read_convert_to_hic_matrix(str file_vals, np.ndarray[np.int64_t, ndim=1] ind
     start_in_file = indixies[0]
     
     cur_res = read_numbers_from_file(file_vals, end_pos - start_in_file, start_in_file)
-
     cdef np.ndarray[FDTYPE_t, ndim=2] hic_matrix = np.zeros((window_size, window_size), dtype=np.int32)
     if (len(cur_res) == 0):
         return hic_matrix
@@ -173,11 +175,13 @@ def read_convert_to_hic_matrix(str file_vals, np.ndarray[np.int64_t, ndim=1] ind
         count_in_cur_row = int(indixies[i + 1] - indixies[i])
         j_in_row = 0
         while (j_in_row < count_in_cur_row):
-            # j - отступ от текущей диагонали
+            # j - offset from the current diagonal
             offset = i + cur_res[j_in_row + j]
             if (offset < window_size):
                 hic_matrix[i][offset] = cur_res[j_in_row + j + 1]
                 hic_matrix[offset][i] = cur_res[j_in_row + j + 1]
+            else : 
+                j_in_row = count_in_cur_row - 2
             j_in_row += 2
         j += j_in_row
         i += 1

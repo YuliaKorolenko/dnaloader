@@ -11,6 +11,7 @@ import pandas as pd
 from typing import List
 from common import Chromosome_Info
 import h5py
+from pympler import muppy, summary
 from .CharacteristicFullHiC import HiCCollerFormat
 
 
@@ -26,7 +27,7 @@ class CharacteristicHiCColer(Characteristic):
             hic_path,
         )
         # self.c_matrix = cooler.Cooler(f"{hic_path}::/resolutions/1000")
-        self.c_matrix = cooler.Cooler(f"{hic_path}")
+        self.c_matrix = cooler.Cooler(f"{hic_path}::/resolutions/1000")
 
     def get_lines(self, chr: int, start: int, WINDOW_SIZE: int):
         return self.c_matrix.matrix(balance=False).fetch(
@@ -37,7 +38,7 @@ class CharacteristicHiCColer(Characteristic):
 
 
 class CharacteristicHiCWithLimit(Characteristic):
-    def __init__(self, folder_res: str, loader_type: str, hic_path = ""):
+    def __init__(self, folder_res: str, loader_type: str, hic_path=""):
         super().__init__(
             folder_res,
         )
@@ -45,10 +46,11 @@ class CharacteristicHiCWithLimit(Characteristic):
         self.indexes_name = os.path.join(self.folder_res, "indexies")
         self.vals_name = os.path.join(self.folder_res, "vals")
         self.meta_name = os.path.join(self.folder_res, "hic_meta.pickle")
-        self.chrom_count = 5
+        self.chrom_count = 1
         self.index_in_row = np.empty((0), dtype=np.int64)
         self.type = loader_type
         self.hic_path = hic_path
+        self.up_boader = 1_000_000
         if (hic_path == ""):
             with open(self.meta_name, 'rb') as file:
                 self.hic_meta = pickle.load(file)
@@ -56,15 +58,17 @@ class CharacteristicHiCWithLimit(Characteristic):
                 self.index_in_row = np.load(self.indexes_name + '.npy')
         else:
             self.preprocess()
-        self.up_boader = 1_000_000
 
-    def __preprocess_meta(self, chromsizes : pd.core.series.Series, bin_size: int) -> None:
+    def __preprocess_meta(
+            self, chromsizes: pd.core.series.Series, bin_size: int) -> None:
         """
         This is where meta information is created for hic with limit.
         + i since there is 1 more element in the indexies array for each chromosome than the size
 
-        :param chromsizes: offsets for bins
-        :bin_size: resolution
+        Parameters
+        ----------
+        chromsizes: offsets for bins
+        bin_size: resolution
         """
         chrom_lists = []
         for i in range(0, self.chrom_count):
@@ -100,19 +104,35 @@ class CharacteristicHiCWithLimit(Characteristic):
             self.vals_name + chr_name + ".bin", np.array(
                 vals, dtype=np.int32), mode)
         del indexies
-        del vals
+        del vals, is_start, chr_name, mode
+
+    def check_memory(self):
+        all_objects = muppy.get_objects()
+        sum1 = summary.summarize(all_objects)
+        # Prints out a summary of the large objects
+        summary.print_(sum1)
+        # Get references to certain types of objects such as dataframe
+        dataframes = [ao for ao in all_objects if isinstance(ao, pd.DataFrame)]
+        for d in dataframes:
+            print(d.columns.values)
+            print(len(d))
 
     def preprocess(self) -> None:
+        """
+        A two-dimensional track around the main diagonal is preprocessed
+
+        """
         if not os.path.exists(self.folder_res):
             os.mkdir(self.folder_res)
 
-        coller_format = HiCCollerFormat(hic_path=self.hic_path, bin_size=500)
-        self.__preprocess_meta(coller_format.get_chrom_offsets(), coller_format.get_bin_size())
+        coller_format = HiCCollerFormat(hic_path=self.hic_path)
+        # coller_format.get_bin_size()
+        self.__preprocess_meta(coller_format.get_chrom_offsets(), 1000)
 
         start_time = time.time()
-        # TODO: calculate batch size using ram size
-        batch_size = 3_000
-        cur_bin = 0
+        # TODO: calculate batch size using free ram size
+        batch_size = 10_000
+        cur_bin = coller_format.get_offset(1 - 1)
 
         for i in range(1, self.chrom_count + 1):
             chr_name = self.get_chr_name(i)
@@ -123,12 +143,14 @@ class CharacteristicHiCWithLimit(Characteristic):
             bin_for_chr = coller_format.get_offset(i)
             print("bin for chr: ", bin_for_chr)
             offset_for_chr = coller_format.get_offset_for_bin1(bin_for_chr) - 1
-            j = 0
             while (cur_bin < bin_for_chr):
+                self.check_memory()
                 start_offset = coller_format.get_offset_for_bin1(cur_bin)
                 # borders (cur_bin, cur_bin + batch_size]
-                end_offset = coller_format.get_offset_for_bin1(cur_bin + batch_size)
-                cur_pixels = coller_format.get_pixels(start_offset, min(end_offset, offset_for_chr))
+                end_offset = coller_format.get_offset_for_bin1(
+                    cur_bin + batch_size)
+                cur_pixels = coller_format.get_pixels(
+                    start_offset, min(end_offset, offset_for_chr))
 
                 cur_pixels = cur_pixels[((cur_pixels["bin1_id"] <= cur_pixels["bin2_id"]) & (
                     cur_pixels["bin1_id"] + (self.up_boader / self.hic_meta.bin_size) >= cur_pixels["bin2_id"]))]
@@ -139,7 +161,8 @@ class CharacteristicHiCWithLimit(Characteristic):
                 del cur_pixels
                 last_size = indexies[len(indexies) - 1] // 2
 
-                self.__save_values(is_start_new_chr, i, indexies, vals, chr_name)
+                self.__save_values(
+                    is_start_new_chr, i, indexies, vals, chr_name)
                 del indexies
                 del vals
                 cur_bin += cur_batch
@@ -149,16 +172,31 @@ class CharacteristicHiCWithLimit(Characteristic):
         print("time: ", time.time() - start_time)
 
     def get_lines(self, chr: int, start: int, WINDOW_SIZE: int):
+        """
+        Returns an submatrix aroun main diagonal
+        on request: chromosome, starting position and window size
+
+        Parameters
+        ----------
+        chr: the number of the chromosome from which the submatrix was requested
+        start: start position in chromosome in nucleotids
+        WINDOW_SIZE: size of submatrix in nucleotids
+        """
         chr_name = self.get_chr_name(chr + 1)
         end_pos = math.ceil((start + WINDOW_SIZE) / self.hic_meta.bin_size)
         start_pos = start // self.hic_meta.bin_size
         cur_name = self.vals_name + chr_name + ".bin"
         start_in_file = self.hic_meta.chromsizes[chr].start_pos + start_pos
+        end_in_file = self.hic_meta.chromsizes[chr].start_pos + end_pos
         if (self.type == "hard"):
-            indixies = read_numbers_from_file(file_indexies, window_size + 1, start)
+            indixies = read_numbers_from_file(
+                self.indexes_name + chr_name + ".bin",
+                end_pos - start_pos + 1,
+                start_pos)
         else:
-            indixies = self.index_in_row[start_in_file : start_in_file + WINDOW_SIZE + 1]
-        return read_convert_to_hic_matrix(cur_name, indixies, end_pos - start_pos)        
+            indixies = self.index_in_row[start_in_file: end_in_file]
+        return read_convert_to_hic_matrix(
+            cur_name, np.array(indixies), end_pos - start_pos)
 
     def get_name(self):
         return "hi_c_limit"
