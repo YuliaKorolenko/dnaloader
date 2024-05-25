@@ -124,8 +124,7 @@ class HiCCollerFormat():
         return bin size
         """
         return self.group.attrs['bin-size']
-
-
+    
 class HICFull():
     """
     Scheme:
@@ -135,8 +134,8 @@ class HICFull():
     │   ├── el_counts, int32
     │   └── start, int64
     └── pixels
-    │   ├── start, int64
-    │   ├── end,   int64
+    │   ├── row, int64
+    │   ├── column,   int64
     │   └── data,  int32
     └── indexes
         └── chrom_offset (25,) int64
@@ -213,9 +212,6 @@ class HICFull():
         s_c_start = start_c // self.bin_size
         s_c_end = (start_c + window_size) // self.bin_size
 
-        num_squares_start = s_r_start * 480 + s_c_start
-        num_squares_end = s_r_end * 500 + s_c_end
-
         square_rows = self.group['meta/square_row']
         square_columns = self.group['meta/square_column']
         el_counts = self.group['meta/el_counts']
@@ -270,7 +266,7 @@ class CharacteristicFullHiC(Characteristic):
             cur_column += 1
             if (cur_column * self.square_size >= cur_chr_offset):
                 cur_row += 1
-                cur_column = 0
+                cur_column = cur_row
 
     def __generate_coo_for_square(
             self, hic_prev: HiCCollerFormat, square_row: int, square_column: int) -> pd.DataFrame:
@@ -289,22 +285,29 @@ class CharacteristicFullHiC(Characteristic):
         return pixels[(square_column * self.square_size <= pixels["bin2_id"])
                       & (pixels["bin2_id"] <= (square_column + 1) * self.square_size)]
 
-    def get_lines(self, start_0 : int, start_1 : int, window_size : int):
-        matrix = np.zeros((3, 3))
-        squares = self.my_h5.get_meta(start_0, start_1, window_size)
+    def get_lines(self, chr: int, start_0 : int, start_1 : int, window_size : int):
+        new_start_0 = start_0 // 1000
+        new_start_1 = start_1 // 1000
+        new_window_size = window_size // 1000
+
+        squares = self.my_h5.get_meta(new_start_0, new_start_1, new_window_size)
+        matrix = np.zeros((new_window_size, new_window_size), dtype=int)
         print(squares)
-        print('/n')
         for _, square in squares.iterrows():
+            print(square["square_rows"])
             start = square['starts']
             count_of_els = square['el_counts']
             # print(start, count_of_els)
             cur_pixels = self.my_h5.get_pixels(start, start + count_of_els)
             
-            matrix = np.zeros((window_size, window_size))
+
             for index, row in cur_pixels.iterrows():
-                cur_row = min(row['bin1_id'], window_size-1)
-                cur_col =  min(row['bin2_id'], window_size -1)
-                matrix[cur_row][cur_col] = row['data']
+                # print(row)
+                cur_row = row['bin1_id'] + square["square_rows"] * 300 - new_start_0
+                cur_col =  row['bin2_id'] + square["square_columns"] * 300 - new_start_1
+                if (cur_row < new_window_size and cur_col < new_window_size):
+                    print(cur_row, " ", cur_col)
+                    matrix[cur_row][cur_col] = row['data']
 
         return matrix
 

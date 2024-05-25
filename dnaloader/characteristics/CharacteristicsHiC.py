@@ -37,6 +37,13 @@ class CharacteristicHiCColer(Characteristic):
         return self.c_matrix.matrix(balance=False).fetch(
             (self.get_chr_name(chr + 1), start, start + WINDOW_SIZE))
 
+    def get_line_d(self, chr: int, start_1: int, start_2 : int, WINDOW_SIZE: int):
+        return self.c_matrix.matrix(balance=False).fetch(
+            (self.get_chr_name(chr + 1), start_1, start_1 + WINDOW_SIZE),
+            (self.get_chr_name(chr + 1), start_2, start_2 + WINDOW_SIZE)
+            )
+
+
     def get_name(self):
         return "hi_c"
 
