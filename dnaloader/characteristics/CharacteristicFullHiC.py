@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from enum import Enum
 import os
-
+import math
 
 class HiCCollerFormat():
     """
@@ -150,7 +150,7 @@ class HICFull():
             print(f"File {hic_path} don't find.")
             self.generate_new_file()
         self.bin_size = bin_size
-        self.square_size = 500
+        self.square_size = 300
 
     def __create_dataset(self, group: h5py._hl.group.Group,
                          d_name: str, d_type: type) -> None:
@@ -207,11 +207,12 @@ class HICFull():
             self.__update_dataset(file, 'meta/start', pd.Series([start]))
 
     def get_meta(self, start_r : int, start_c : int, window_size : int) -> pd.DataFrame:
-        s_r_start = start_r // self.bin_size
-        s_r_end = (start_r + window_size) // self.bin_size
-        s_c_start = start_c // self.bin_size
-        s_c_end = (start_c + window_size) // self.bin_size
+        s_r_start = start_r // self.square_size
+        s_r_end = (start_r + window_size) // self.square_size
+        s_c_start = start_c // self.square_size
+        s_c_end = (start_c + window_size) // self.square_size
 
+        print("s_r_start: ", s_r_start, "s_r_end: ", s_r_end, "s_c_start: ", s_c_start, "s_c_end: ", s_c_end)
         square_rows = self.group['meta/square_row']
         square_columns = self.group['meta/square_column']
         el_counts = self.group['meta/el_counts']
@@ -219,8 +220,13 @@ class HICFull():
         cur_datafr =  pd.DataFrame(
             {'square_rows': square_rows, 'square_columns': square_columns,
               'el_counts': el_counts, 'starts': starts})
-        return cur_datafr[(s_r_start <= cur_datafr['square_rows']) & (s_r_end >= cur_datafr['square_rows']) &
-                          (s_c_start <= cur_datafr['square_columns'])  & (s_c_end >= cur_datafr['square_columns'])]
+        if (s_r_start < s_c_start):
+            return cur_datafr[(s_r_start <= cur_datafr['square_rows']) & (s_r_end >= cur_datafr['square_rows']) &
+                            (s_c_start <= cur_datafr['square_columns'])  & (s_c_end >= cur_datafr['square_columns'])]
+        else:
+            return cur_datafr[(s_c_start <= cur_datafr['square_rows']) & (s_c_end >= cur_datafr['square_rows']) &
+                            (s_r_start <= cur_datafr['square_columns'])  & (s_r_end >= cur_datafr['square_columns'])]
+
     
     def get_pixels(self, start : int, end : int):
         row_in_square = self.group['pixels/bin1_id'][start: end]
@@ -238,7 +244,7 @@ class CharacteristicFullHiC(Characteristic):
             path,
         )
         # first size of squares will be 256
-        self.square_size = 500
+        self.square_size = 300
         self.hic_path = hic_path
         if (self.hic_path == ""):
             self.my_h5 = HICFull(self.path + ".h5", 1_000)
@@ -254,8 +260,8 @@ class CharacteristicFullHiC(Characteristic):
         while (cur_row * self.square_size < cur_chr_offset):
             # Keep only the top part
             pixels = self.__generate_coo_for_square(hic_prev, cur_row, cur_column)
-            print(len(pixels))
-            print(pixels)
+            # print(len(pixels))
+            # print(pixels)
             my_h5.update_with_new_square(square_row=cur_row, 
                                          square_column=cur_column, 
                                          start=cur_start, 
@@ -286,28 +292,43 @@ class CharacteristicFullHiC(Characteristic):
                       & (pixels["bin2_id"] <= (square_column + 1) * self.square_size)]
 
     def get_lines(self, chr: int, start_0 : int, start_1 : int, window_size : int):
-        new_start_0 = start_0 // 1000
-        new_start_1 = start_1 // 1000
-        new_window_size = window_size // 1000
+        new_start_0 = start_0 // self.my_h5.bin_size
+        new_start_1 = start_1 // self.my_h5.bin_size
+        new_window_size = math.ceil((start_0 + window_size) / self.my_h5.bin_size) - new_start_0
 
+        print("new start 0:", new_start_0, "new start 1:", new_start_1)
         squares = self.my_h5.get_meta(new_start_0, new_start_1, new_window_size)
         matrix = np.zeros((new_window_size, new_window_size), dtype=int)
         print(squares)
         for _, square in squares.iterrows():
-            print(square["square_rows"])
             start = square['starts']
             count_of_els = square['el_counts']
             # print(start, count_of_els)
             cur_pixels = self.my_h5.get_pixels(start, start + count_of_els)
+
+            cur_pixels['c_r_1'] = cur_pixels['bin1_id'] +  square["square_rows"] * self.my_h5.square_size - new_start_0
+            cur_pixels['c_c_1'] = cur_pixels['bin2_id'] + square["square_columns"] * self.my_h5.square_size - new_start_1 
+
+            cur_pixels['c_r_2'] = cur_pixels['bin2_id'] + square["square_columns"] * self.my_h5.square_size - new_start_0
+            cur_pixels['c_c_2'] = cur_pixels['bin1_id'] +  square["square_rows"] * self.my_h5.square_size - new_start_1 
+            
+            cur_pixels_1 = cur_pixels[((cur_pixels['c_r_1'] < new_window_size) &
+                                    (cur_pixels['c_c_1']< new_window_size) &
+                                    (0 <= cur_pixels['c_r_1']) &
+                                    (0 <= cur_pixels['c_c_1']))]
+            
+            
+            cur_pixels_2 = cur_pixels[(cur_pixels['c_r_2'] < new_window_size) &
+                                     (cur_pixels['c_c_2'] < new_window_size) &
+                                     (0 <= cur_pixels['c_r_2']) &
+                                     (0 <= cur_pixels['c_c_2'])] 
+            
+            # del cur_pixels
+
+            matrix[cur_pixels_1['c_r_1'], cur_pixels_1['c_c_1']] = cur_pixels_1['data']
+            matrix[cur_pixels_2['c_r_2'], cur_pixels_2['c_c_2']] = cur_pixels_2['data']
             
 
-            for index, row in cur_pixels.iterrows():
-                # print(row)
-                cur_row = row['bin1_id'] + square["square_rows"] * 300 - new_start_0
-                cur_col =  row['bin2_id'] + square["square_columns"] * 300 - new_start_1
-                if (cur_row < new_window_size and cur_col < new_window_size):
-                    print(cur_row, " ", cur_col)
-                    matrix[cur_row][cur_col] = row['data']
-
+        print(new_window_size)
         return matrix
 
