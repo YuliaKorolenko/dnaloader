@@ -22,34 +22,37 @@ class HiC_Meta:
 
 
 class CharacteristicHiCColer(Characteristic):
-    def __init__(self, hic_path: str, bin_size : int):
+    def __init__(self, hic_path: str, bin_size: int):
         super().__init__(
             hic_path,
         )
         if hic_path.endswith(".mcool"):
-            self.c_matrix = cooler.Cooler(f"{hic_path}::/resolutions/{bin_size}")
+            self.c_matrix = cooler.Cooler(
+                f"{hic_path}::/resolutions/{bin_size}")
         elif hic_path.endswith(".cool"):
             self.c_matrix = cooler.Cooler(f"{hic_path}")
         else:
-            raise ValueError("Wrong path, only files are supported with .cool and .mcool extensions")
+            raise ValueError(
+                "Wrong path, only files are supported with .cool and .mcool extensions")
 
     def get_lines(self, chr: int, start: int, WINDOW_SIZE: int):
         return self.c_matrix.matrix(balance=False).fetch(
             (self.get_chr_name(chr + 1), start, start + WINDOW_SIZE))
 
-    def get_line_d(self, chr: int, start_1: int, start_2 : int, WINDOW_SIZE: int):
+    def get_line_d(self, chr: int, start_1: int,
+                   start_2: int, WINDOW_SIZE: int):
         return self.c_matrix.matrix(balance=False).fetch(
             (self.get_chr_name(chr + 1), start_1, start_1 + WINDOW_SIZE),
             (self.get_chr_name(chr + 1), start_2, start_2 + WINDOW_SIZE)
-            )
-
+        )
 
     def get_name(self):
         return "hi_c"
 
 
 class Characteristic2dWithLimit(Characteristic):
-    def __init__(self, folder_res: str, loader_type: str, hic_path="", bin_size=1_000):
+    def __init__(self, folder_res: str, loader_type: str,
+                 hic_path="", bin_size=1_000):
         super().__init__(
             folder_res,
         )
@@ -128,7 +131,7 @@ class Characteristic2dWithLimit(Characteristic):
             print(d.columns.values)
             print(len(d))
 
-    def preprocess(self, bin_size : int) -> None:
+    def preprocess(self, bin_size: int) -> None:
         """
         A two-dimensional track around the main diagonal is preprocessed
 
@@ -207,8 +210,8 @@ class Characteristic2dWithLimit(Characteristic):
             indixies = self.index_in_row[start_in_file: end_in_file]
         return read_convert_to_hic_matrix(
             cur_name, np.array(indixies), end_pos - start_pos)
-    
-    def get_chr_lenght(self, chr : int):
+
+    def get_chr_lenght(self, chr: int):
         return self.hic_meta.chromsizes[chr].lenght
 
     def get_name(self):

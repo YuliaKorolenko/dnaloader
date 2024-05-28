@@ -9,17 +9,19 @@ if __name__ == '__main__':
     file_path = current_path + "/helper/4DNFI9FVHJZQ.mcool"
 
     chr_with_limit = Characteristic2dWithLimit(
-            "hic_result_1000", "hard")
+        "hic_result_1000", "hard")
     chr_with_coller = CharacteristicHiCColer(
-            file_path, 1_000)
-    
+        file_path, 1_000)
+
     for i in range(0, 10):
         random_chr = random.randint(0, 23)
         chr_size = chr_with_limit.get_chr_lenght(random_chr)
         random_number = random.randint(0, chr_size)
-        random_window = random.randint(0, min(1_000_000, chr_size - random_number))
-        
-        my_answer = chr_with_limit.get_lines(random_chr, random_number, random_window)
+        random_window = random.randint(
+            0, min(1_000_000, chr_size - random_number))
+
+        my_answer = chr_with_limit.get_lines(
+            random_chr, random_number, random_window)
 
         right_answer = chr_with_coller.get_lines(
             random_chr, random_number, random_window)
