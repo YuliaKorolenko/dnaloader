@@ -32,7 +32,7 @@ if __name__ == '__main__':
         for i in range(0, 1000):
             # Choose a random chromosome, starting position and window size
             random_chr = 0
-            chr_size = 240000000 - cur_window_size
+            chr_size = track_2d.get_chr_lenght(random_chr) - cur_window_size
             random_1 = random.randint(0, chr_size)
             random_2 = random.randint(0, chr_size)
 
@@ -50,6 +50,7 @@ if __name__ == '__main__':
 
     df = pd.DataFrame(data)
 
+    sns.set(style="darkgrid")
     plt.figure(figsize=(9, 6))
     sns.lineplot(
         x='Window Size',
