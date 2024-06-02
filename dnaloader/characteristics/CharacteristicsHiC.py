@@ -34,12 +34,20 @@ class CharacteristicHiCColer(Characteristic):
         else:
             raise ValueError(
                 "Wrong path, only files are supported with .cool and .mcool extensions")
-
-    def get_lines(self, chr: int, start: int, WINDOW_SIZE: int):
+        
+    def get_lines(self, *args):
+        if len(args) == 3:
+            return self.get_lines_limit(*args)
+        elif len(args) == 4:
+            return self.get_lines_full(*args)
+        else:
+           raise ValueError("Wrong number of arguments")
+        
+    def get_lines_limit(self, chr: int, start: int, WINDOW_SIZE: int):
         return self.c_matrix.matrix(balance=False).fetch(
             (self.get_chr_name(chr + 1), start, start + WINDOW_SIZE))
 
-    def get_line_d(self, chr: int, start_1: int,
+    def get_lines_full(self, chr: int, start_1: int,
                    start_2: int, WINDOW_SIZE: int):
         return self.c_matrix.matrix(balance=False).fetch(
             (self.get_chr_name(chr + 1), start_1, start_1 + WINDOW_SIZE),
