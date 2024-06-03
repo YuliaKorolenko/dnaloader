@@ -12,7 +12,7 @@ from typing import List
 from dnaloader.common import Chromosome_Info
 import h5py
 from pympler import muppy, summary
-from .CharacteristicFullHiC import HiCCollerFormat
+from .formats import CoolerFormat
 
 
 @dataclass
@@ -37,18 +37,24 @@ class CharacteristicHiCColer(Characteristic):
         
     def get_lines(self, *args):
         if len(args) == 3:
-            return self.get_lines_limit(*args)
+            return self.__get_lines_limit(*args)
         elif len(args) == 4:
-            return self.get_lines_full(*args)
+            return self.__get_lines_full(*args)
         else:
            raise ValueError("Wrong number of arguments")
         
-    def get_lines_limit(self, chr: int, start: int, WINDOW_SIZE: int):
+    def __get_lines_limit(self, chr: int, start: int, WINDOW_SIZE: int):
+        """
+        Using cooler, the function returns matrix along the main diagonal
+        """
         return self.c_matrix.matrix(balance=False).fetch(
             (self.get_chr_name(chr + 1), start, start + WINDOW_SIZE))
 
-    def get_lines_full(self, chr: int, start_1: int,
+    def __get_lines_full(self, chr: int, start_1: int,
                    start_2: int, WINDOW_SIZE: int):
+        """
+        Using cooler, the function returns matrix from anywhere
+        """
         return self.c_matrix.matrix(balance=False).fetch(
             (self.get_chr_name(chr + 1), start_1, start_1 + WINDOW_SIZE),
             (self.get_chr_name(chr + 1), start_2, start_2 + WINDOW_SIZE)
@@ -147,7 +153,7 @@ class Characteristic2dWithLimit(Characteristic):
         if not os.path.exists(self.folder_res):
             os.mkdir(self.folder_res)
 
-        coller_format = HiCCollerFormat(hic_path=self.hic_path)
+        coller_format = CoolerFormat(hic_path=self.hic_path)
         # coller_format.get_bin_size()
         self.__preprocess_meta(coller_format.get_chrom_offsets(), bin_size)
 

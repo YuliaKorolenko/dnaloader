@@ -15,7 +15,7 @@ if __name__ == '__main__':
     # res - the path to the cool/mcool file
 
     file_path_mcool = "/home/ojpochemy/SamplerBigWig/hi_c/4DNFIPO1DGLH.mcool"
-    res = os.getcwd() + "/hic_r4.h5"
+    res = os.getcwd() + "/hic_2.h5"
 
     track_2d = CharacteristicFullHiC(res)
 
@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
         cur_window_size = 1000 * (10 ** i)
         print("window size: ", cur_window_size)
-        for i in range(0, 1000):
+        for i in range(0, 100):
             # Choose a random chromosome, starting position and window size
             random_chr = 0
             chr_size = track_2d.get_chr_lenght(random_chr) - cur_window_size
@@ -42,7 +42,7 @@ if __name__ == '__main__':
             data['My approach'].append(time.time() - start_time)
 
             start_time = time.time()
-            a2 = track_2d_coller.get_line_d(
+            a2 = track_2d_coller.get_lines(
                 random_chr, random_1, random_2, cur_window_size)
             data['Cooler'].append(time.time() - start_time)
 
