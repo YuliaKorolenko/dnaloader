@@ -10,7 +10,6 @@ import pickle
 import pandas as pd
 from typing import List
 from dnaloader.common import Chromosome_Info
-import h5py
 from pympler import muppy, summary
 from .formats import CoolerFormat
 
@@ -21,7 +20,7 @@ class HiC_Meta:
     chromsizes: List[Chromosome_Info]
 
 
-class CharacteristicHiCColer(Characteristic):
+class CharacteristicCooler(Characteristic):
     def __init__(self, hic_path: str, bin_size: int):
         super().__init__(
             hic_path,

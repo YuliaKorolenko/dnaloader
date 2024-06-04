@@ -5,12 +5,10 @@ import numpy as np
 import torch
 import psutil
 import pickle
-from dnaloader.common import Chromosome_Info, Chromosome_Info_For_Simple
-from sys import getsizeof
+from dnaloader.common import Chromosome_Info
 from dataclasses import dataclass
 from typing import List
 from tqdm import tqdm
-from memory_profiler import profile
 from dnaloader.characteristics.bwhelper import write_array_to_file, read_numbers_from_file, read_and_convert_numbers_from_file, generate_array_from_tuples, create_upper_indixies, find_results, read_and_convert_light
 
 

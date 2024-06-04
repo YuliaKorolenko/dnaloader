@@ -1,5 +1,5 @@
 
-from dnaloader.characteristics import Characteristic2dWithLimit, CharacteristicHiCColer, Characteristic
+from dnaloader.characteristics import Characteristic2dWithLimit, CharacteristicCooler, Characteristic
 import os
 import random
 import time
@@ -25,7 +25,7 @@ if __name__ == '__main__':
         folder_res=res,
         loader_type="hard")
 
-    track_2d_coller = CharacteristicHiCColer(
+    track_2d_coller = CharacteristicCooler(
         hic_path=file_path_mcool,
         bin_size=1_000
     )

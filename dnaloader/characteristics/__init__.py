@@ -1,7 +1,7 @@
 from .Characteristics import Characteristic, CharacteristicBigWig, CharacteristicBigWigCSR
-from .CharacteristicsHiC import CharacteristicHiCColer, Characteristic2dWithLimit
-from .CharacteristicFullHiC import CharacteristicFullHiC
+from .CharacteristicsHiC import CharacteristicCooler, Characteristic2dWithLimit
+from .CharacteristicFullHiC import CharacteristicFull2D
 from .formats import CoolerFormat
 
 __all__ = ['Characteristic', 'CharacteristicBigWig', 'CharacteristicBigWigCSR',
-           'CharacteristicHiCColer', 'Characteristic2dWithLimit', 'CharacteristicFullHiC', 'CoolerFormat']
+           'CharacteristicCooler', 'Characteristic2dWithLimit', 'CharacteristicFull2D', 'CoolerFormat']

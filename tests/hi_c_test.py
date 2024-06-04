@@ -1,7 +1,7 @@
 import random
 import numpy as np
 import os
-from dnaloader.characteristics import CharacteristicHiCColer, Characteristic2dWithLimit
+from dnaloader.characteristics import CharacteristicCooler, Characteristic2dWithLimit
 
 if __name__ == '__main__':
     # TODO: rewrite in pytest
@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     chr_with_limit = Characteristic2dWithLimit(
         "hic_result_1000", "hard")
-    chr_with_coller = CharacteristicHiCColer(
+    chr_with_coller = CharacteristicCooler(
         file_path, 1_000)
 
     for i in range(0, 10):

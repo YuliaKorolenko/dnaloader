@@ -1,5 +1,5 @@
 
-from dnaloader.characteristics import CharacteristicFullHiC, CharacteristicHiCColer, Characteristic
+from dnaloader.characteristics import CharacteristicFull2D, CharacteristicCooler
 import os
 import random
 import time
@@ -15,11 +15,11 @@ if __name__ == '__main__':
     # res - the path to the cool/mcool file
 
     file_path_mcool = "/home/ojpochemy/SamplerBigWig/hi_c/4DNFIPO1DGLH.mcool"
-    res = os.getcwd() + "/hic_2.h5"
+    res = os.getcwd() + "/hic_aaa.h5"
 
-    track_2d = CharacteristicFullHiC(res)
+    track_2d = CharacteristicFull2D(res)
 
-    track_2d_coller = CharacteristicHiCColer(
+    track_2d_coller = CharacteristicCooler(
         hic_path=file_path_mcool,
         bin_size=1_000
     )
