@@ -30,7 +30,7 @@ class CoolerFormat():
     INDEXES_CH_OFFSET = '/indexes/chrom_offset'
     BINS = 'bins'
     BINS_CHR = '/' + BINS + '/chrom'
-    BINS_START = '/start'
+    BINS_START = '/bins/start'
     BINS_END = '/bins/end'
     BINS_WEIGHT = '/bins/weight'
 

@@ -47,6 +47,9 @@ class Sequences():
             chr_info.wit_sep_lenght, 'Make the starting position smaller or choose a different chromosome'
 
         return start_pos, lengh_window
+    
+    def get_chr_bounds(self):
+        return self.chr_bound
 
     def get_name(self):
         return "dnaseq"
@@ -143,6 +146,7 @@ class DNASequenceBase(Sequences):
             cur_chr = "chrY"
         start_pos, lengh_window = self.get_location_in_fasta(
             self.start_chr_positions[chr], start, WINDOW_SIZE)
+        print("length window", lengh_window)
         return torch.tensor(read_n_values_from_dna(
             self.fa_path, lengh_window, start_pos, np.array([0, 1, 2, 3])))
 

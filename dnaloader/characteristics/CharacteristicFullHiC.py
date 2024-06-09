@@ -1,4 +1,5 @@
 from .Characteristics import Characteristic
+from dnaloader.common import Chromosome_Info
 from .formats import CoolerFormat
 import h5py
 import numpy as np
@@ -328,3 +329,6 @@ class CharacteristicFull2D(Characteristic):
                    cur_pixels_2['c_c_2']] = cur_pixels_2['data']
 
         return matrix
+    
+    def get_name(self):
+        return "2d"

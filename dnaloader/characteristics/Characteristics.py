@@ -137,13 +137,9 @@ class CharacteristicBigWig(Characteristic):
     def get_name(self):
         return "bw"
 
-    def get_chr_info(self):
-        return self.chr_info
 
+class Characteristic1d(Characteristic):
 
-class CharacteristicBigWigCSR(Characteristic):
-
-    # @profile
     def __init__(self, folder_res: str, size_of_bw: int,
                  type_of_loader: str = "hard", path: str = ""):
         super().__init__(
@@ -160,10 +156,6 @@ class CharacteristicBigWigCSR(Characteristic):
         if (path != ''):
             self.prerpocess_all()
         else:
-            # проверить, что есть такие файлы, если нет, то кинуть ошибку и попросить перезагрузить
-            # а тут в else флажок? и считывание из pybigWig
-            # тут надо написать что-то типо, если хотите быстрее, то тынете
-            # пропроцесс. Пока быстрых данных нет
             if (len(self.index_in_row) == 0 and self.type_of_loader == "medium" or
                     self.type_of_loader == "light"):
                 self.index_in_row = np.load(self.name_of_indexes + '.npy')
@@ -177,7 +169,6 @@ class CharacteristicBigWigCSR(Characteristic):
         max_elements = available_memory // dtype_size
         return max_elements // self.bw_meta.number_of_bw // 10
 
-    # @profile
     def preprocess_meta(self, file_paths):
         chrom_lists = []
         file_name = file_paths[0]
@@ -204,7 +195,6 @@ class CharacteristicBigWigCSR(Characteristic):
         with open(self.path, 'r') as file:
             for line in file:
                 file_paths.append(line.strip())
-        # тут проверять, что есть хотя бы один биг виг
         if not os.path.exists(self.folder_res):
             os.makedirs(self.folder_res)
         self.preprocess_meta(file_paths)
@@ -256,10 +246,8 @@ class CharacteristicBigWigCSR(Characteristic):
         # результаты записываем в файл indexies
         upper_indexies = create_upper_indixies(
             np.array(index_in_row_cur), cur_pos + self.bw_meta.chromosome_info_list[chr - 1].start_pos)
-        print("upper indexies: ", upper_indexies)
         self.index_in_row = np.concatenate(
             (self.index_in_row[:-1], upper_indexies), axis=0, dtype=np.int64)
-        print(self.index_in_row)
         np.save(self.name_of_indexes + '.npy', self.index_in_row)
 
     def preprocess_subsequence(self, file_paths):
@@ -317,13 +305,11 @@ class CharacteristicBigWigCSR(Characteristic):
                                              start_in_array + WINDOW_SIZE + 1]
             return cur_indixies, start_in_file, end_posit
         elif (self.type_of_loader == "light"):
-            # print((self.index_in_row[100]))
             gl_start = self.bw_meta.chromosome_info_list[chr].start_pos
             cur_indexies = find_results(
                 self.index_in_row,
                 gl_start + start,
                 gl_start + start + WINDOW_SIZE)
-            # print("cur indixies ", cur_indexies)
             return cur_indexies, cur_indexies[0][1], cur_indexies[len(
                 cur_indexies) - 1][1]
         else:
@@ -338,16 +324,12 @@ class CharacteristicBigWigCSR(Characteristic):
     def get_lines(self, chr: int, start: int, WINDOW_SIZE: int):
         cur_indixies, start_in_file, end_posit = self.get_indixies(
             WINDOW_SIZE, start, chr)
-        # print(start_in_file, " ", end_posit)
         cur_res = read_numbers_from_file(
             self.get_file_name(chr),
             end_posit - start_in_file,
             start_in_file)
-        # print("cur res: ", cur_res)
         if (self.type_of_loader == "light"):
             start_for_chr = self.bw_meta.chromosome_info_list[chr].start_pos
-            # print(cur_res)
-            # print(cur_indixies)
             return read_and_convert_light(WINDOW_SIZE, np.array(
                 cur_res, dtype=np.int64), start_for_chr, cur_indixies, self.bw_meta.number_of_bw)
         return read_and_convert_numbers_from_file(WINDOW_SIZE, np.array(cur_res, dtype=np.int64), self.bw_meta.chromosome_info_list[chr].lenght,
@@ -355,16 +337,3 @@ class CharacteristicBigWigCSR(Characteristic):
 
     def get_name(self):
         return "bwcsr"
-
-    def get_chr_info(self):
-        return self.bw_meta.chromosome_info_list
-
-
-if __name__ == '__main__':
-    chr_big_wig = CharacteristicBigWigCSR(
-        "/home/ojpochemy/dna-loader/resfold",
-        1,
-        "/home/ojpochemy/dna-loader/file_paths.txt")
-    # print(chr_big_wig.get_lines(0, 0, 10))
-    # print(chr_big_wig.get_lines(0, 100, 10))
-    print(chr_big_wig.get_name())

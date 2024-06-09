@@ -33,7 +33,7 @@ class HandMadeCoordinates(CoordinateBase):
         # check boarders of chromosome
         for elem_in_list in self.numbers_list:
             if (chr_bounds[elem_in_list[0]].lenght <= elem_in_list[2]):
-                raise RuntimeError("Произошла ошибка!")
+                raise RuntimeError("Wrong boarders!")
 
     def get_next_coord(self):
         self.cur_pos += 1
