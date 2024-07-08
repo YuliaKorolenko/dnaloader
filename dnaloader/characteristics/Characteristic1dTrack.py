@@ -103,6 +103,14 @@ class Format1D():
             if (len(pixel_data) > 0):
                 self.__update_dataset(file[self.PIX_DATA], pixel_data)
 
+        del pixel_offsets, pixel_data
+
+    def update_meta(self, ind_offsets, bin_size: int):
+        with h5py.File(self.hic_path, "a") as file:
+            file.attrs['bin_size'] = 1
+            self.__update_dataset(file[self.IND_OFFSET], ind_offsets)
+        
+
     
 class Characteristic1dPreprocess(CharacteristicPreprocess):
     def __init__(self, prev_path: str, res_path: str = ""):
@@ -112,7 +120,6 @@ class Characteristic1dPreprocess(CharacteristicPreprocess):
         )
 
     def preprocess(self):
-        print("hello hello hello")
         self.create_new_file()
 
         # generate all bw paths
@@ -121,21 +128,30 @@ class Characteristic1dPreprocess(CharacteristicPreprocess):
             for line in file:
                 file_paths.append(line.strip())
 
-        # self.preprocess_meta(file_paths)
-        self.preprocess_subsequence(file_paths)
+        bw = pyBigWig.open(file_paths[0])
+        new_format = self.__generate_offset_new_format(bw.chroms())
+        self.format1d.update_meta(new_format, 1)
+        self.preprocess_subsequence(file_paths, new_format)
+
+    def __generate_offset_new_format(self, bw_chroms):
+        new_format_offset = []
+        for i in range(1, 24 + 1):
+            chr = "chr"
+            if i == 23:
+                chr += "X"
+            elif i == 24:
+                chr += "Y"
+            else:
+                chr += str(i)
+
+            chrom_size = bw_chroms[chr]
+            new_format_offset.append(chrom_size)
+        return new_format_offset
 
     def save_information(self, arr_col_data, chr_name: str,
                          cur_pos: int, index_in_row_cur, chr_num: int):
-        mode = b'a'
-        if (cur_pos == 0):
-            mode = b'wb'
-
-        print(len(index_in_row_cur))
-        print(len(arr_col_data))
-        
         self.format1d.update_with_new_part(index_in_row_cur, arr_col_data)
         del index_in_row_cur
-
         del arr_col_data
     
     def get_max_array_size(self):
@@ -145,11 +161,11 @@ class Characteristic1dPreprocess(CharacteristicPreprocess):
         # add bw count
         return max_elements // 6 // 10
 
-    def preprocess_subsequence(self, file_paths):
+    def preprocess_subsequence(self, file_paths, ind_offsets):
         for num_chr in range(1, 24 + 1):
             last_post_in_file = 0
             cur_pos = 0
-            chrom_size = 100_000
+            chrom_size = ind_offsets[num_chr - 1]
             chr_name = self.get_chr_name(num_chr)
             print("Chromosome preprocessing: ", chr_name)
             with tqdm(total=chrom_size, desc="Progress", unit="iter") as pbar:
